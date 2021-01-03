@@ -11,7 +11,7 @@ Particles = Dict[ParticleKeys, jnp.DeviceArray]
 
 
 def random_walk(
-    prng_key: jnp.DeviceArray, particles: Particles, iterations: int
+    prng_key: jnp.DeviceArray, particles: Particles, iterations: int,
 ) -> Tuple[jnp.DeviceArray, Particles]:
     num_particles = particles["position"].shape[-1]
 
@@ -26,13 +26,20 @@ def random_walk(
     return prng_key, particles
 
 
-random_walk = jit(random_walk, static_argnums=[2])
+random_walk = jit(random_walk, static_argnums=(2,))
 
 
 def timer(func):
     def wrap(*args, **kwargs):
         start = time.time()
         ret = func(*args, **kwargs)
+
+        # See https://jax.readthedocs.io/en/latest/async_dispatch.html
+        # for why this is needed.
+        _, particles = ret
+        for _, item in particles.items():
+            item.block_until_ready()
+
         stop = time.time()
         duration = (stop - start) * 1000.0
         print("{:s} duration: {:.3f} ms".format(func.__name__, duration))
