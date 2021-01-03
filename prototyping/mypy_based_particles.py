@@ -1,3 +1,33 @@
+"""Timings on Google's Colaboratory:
+
+https://colab.research.google.com/drive/1QZKnByThJrq9NhgBbFb8Nx6cPybFVWZJ#scrollTo=am-XsJDDrBU8&line=4&uniqifier=1
+
+CPU:
+    random_walk duration: 5368.768 ms
+    random_walk duration: 1387.357 ms
+    random_walk duration: 1339.349 ms
+    random_walk duration: 1359.297 ms
+    random_walk duration: 1344.687 ms
+    random_walk duration: 1326.127 ms
+    random_walk duration: 1358.951 ms
+    random_walk duration: 1382.427 ms
+    random_walk duration: 1355.318 ms
+    random_walk duration: 1377.143 ms
+
+GPU:
+    random_walk duration: 1373.592 ms
+    random_walk duration: 15.000 ms
+    random_walk duration: 14.722 ms
+    random_walk duration: 14.642 ms
+    random_walk duration: 21.203 ms
+    random_walk duration: 14.714 ms
+    random_walk duration: 14.782 ms
+    random_walk duration: 14.749 ms
+    random_walk duration: 14.655 ms
+    random_walk duration: 14.642 ms
+"""
+
+
 import time
 from typing import Dict, Tuple
 from typing_extensions import Literal
