@@ -8,7 +8,6 @@ from jax import jit, random
 import jax.numpy as jnp
 
 ParticleKeys = Literal["position", "direction", "energy"]
-
 Particles = Dict[ParticleKeys, jnp.DeviceArray]
 
 
