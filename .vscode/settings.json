@@ -2,6 +2,7 @@
     "cSpell.words": [
         "PRNG",
         "argnums",
-        "numpy"
+        "numpy",
+        "pyplot"
     ]
 }

@@ -2,6 +2,8 @@ import time
 from typing import Dict, Tuple
 from typing_extensions import Literal
 
+import matplotlib.pyplot as plt
+
 from jax import jit, random
 import jax.numpy as jnp
 
@@ -72,6 +74,9 @@ def main():
 
     for _ in range(runs):
         prng_key, particles = random_walk(prng_key, particles, iterations)
+
+    plt.scatter(particles["position"][0, 0:1000], particles["position"][1, 0:1000])
+    plt.show()
 
 
 if __name__ == "__main__":
