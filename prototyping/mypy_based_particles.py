@@ -1,3 +1,4 @@
+import time
 from typing import Dict
 from typing_extensions import Literal
 
@@ -26,6 +27,21 @@ def random_walk(rng_key, particles: Particles, iterations):
 random_walk = jit(random_walk, static_argnums=[2])
 
 
+def timer(func):
+    def wrap(*args, **kwargs):
+        start = time.time()
+        ret = func(*args, **kwargs)
+        stop = time.time()
+        duration = (stop - start) * 1000.0
+        print("{:s} duration: {:.3f} ms".format(func.__name__, duration))
+        return ret
+
+    return wrap
+
+
+random_walk = timer(random_walk)
+
+
 def particles_zeros(num_particles):
     num_particles = int(num_particles)
 
@@ -43,10 +59,12 @@ def main():
     rng_key = random.PRNGKey(seed)
     num_particles = 1e6
     iterations = 10
+    runs = 10
 
     particles = particles_zeros(num_particles)
 
-    rng_key, particles = random_walk(rng_key, particles, iterations)
+    for _ in range(runs):
+        rng_key, particles = random_walk(rng_key, particles, iterations)
 
 
 if __name__ == "__main__":
