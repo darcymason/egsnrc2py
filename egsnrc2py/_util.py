@@ -173,14 +173,14 @@ if __name__ == "__main__":
     # print("Subst for ", test_code)
     # print(test_eval_subst(test_code))
 
-    in_filename = "mortran/electr.mortran"
+    in_filename = MORTRAN_SOURCE_PATH / "electr.mortran"
     with open(in_filename, 'r') as f:
         code = f.read()
 
-    with open("mortran/egsnrc.macros", 'r') as f:
+    with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    with open("mortran/egsnrc.mortran", 'r') as f:
+    with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
         full_egs_code = f.read()
 
 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     """
     )
 
-    # generate_macros_py("build/macros.py", full_egs_code)
+    # generate_macros_py(AUTO_TRANSPILE_PATH / "macros.py", full_egs_code)
     map_replaces = map_replace_from_to(macros_code)
     print(map_replaces)
     print("Nulls:")

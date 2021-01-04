@@ -3,8 +3,10 @@ import re
 import sys
 
 from typing import List
-from macros import constant_macros, called_macros
 from textwrap import dedent
+
+from .macros import constant_macros, called_macros
+from .config import MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH
 
 
 # Type conversions
@@ -257,7 +259,7 @@ def build_particle_class(filename) -> None:
         for var, var_type in zip(vars, var_types)
     )
 
-    with open("templates/particle_tmpl.py", 'r') as f:
+    with open(TEMPLATES_PATH / "particle_tmpl.py", 'r') as f:
         str_out = f.read().format(imports=imports, variables=variables)
 
     with open(filename, 'w') as f:
@@ -288,12 +290,12 @@ def replace_constants(code, ):
 
 
 if __name__ == "__main__":
-    out_filename = "build/electr.py"
+    out_filename = AUTO_TRANSPILE_PATH / "electr.py"
 
-    # in_filename = "mortran/egsnrc.macros"
-    # out_filename = "build/common.py"
+    # in_filename = MORTRAN_SOURCE_PATH / "egsnrc.macros"
+    # out_filename = AUTO_TRANSPILE_PATH / "common.py"
 
-    with open("mortran/electr.mortran", 'r') as f:
+    with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
         code = f.read()
 
     code = fix_identifiers(code)
@@ -306,7 +308,7 @@ if __name__ == "__main__":
     code = replace_var_decl(code)
     code = comment_out_lines(code, commenting_lines)
     code = replace_particle_vars(code)
-    build_particle_class("build/particle.py")
+    build_particle_class(AUTO_TRANSPILE_PATH / "particle.py")
 
     # code = "$AUSCALL($SPHOTONA);"
     # code = replace_macro_callables(code)
