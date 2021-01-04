@@ -1,0 +1,5 @@
+
+# recursive-include examples *
+include egsnrc2py/*
+include LICENSE
+include README.md
