@@ -1,4 +1,4 @@
-# Copyright 2020 egsnrc2py authors. See LICENSE file for details.
+# Copyright 2020-2021 egsnrc2py authors. See LICENSE file for details.
 
 import logging
 import logging.config
