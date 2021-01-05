@@ -6,14 +6,11 @@ from typing import List
 from textwrap import dedent
 
 from .macros import constant_macros, called_macros
-from .config import MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH
-
-
-# Type conversions
-REAL = "float"
-ENERGY_PRECISION = "float"
-INTEGER = "int"
-LOGICAL = "bool"
+from .config import (
+    MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH,
+    REAL, ENERGY_PRECISION, INTEGER, LOGICAL
+)
+from egsnrc2py.util import fix_identifiers
 
 
 if sys.version_info < (3, 8):
@@ -131,21 +128,6 @@ def comment_out_lines(code: str, lines_to_comment: list) -> str:
         if line in lines_to_comment:
             all_lines[i] = "# " + line
     return "\n".join(all_lines)
-
-
-def fix_identifiers(code) -> str:
-    """Take invalid (for Python) var names and make them valid"""
-    # Fix leading number, often used for ranges
-    code = re.sub(r"^[^#].*\$(\d)", r"\$from\1", code)
-
-    # Fix dashes to underscore
-    # First, some comment have "---", keep those by enclosing in spaces
-    code = re.sub(r'"(.*)\$(\w*)---', r'"\1$\2 --- ', code)
-    for i in range(8, 1, -1):  # up to 7 dashes
-        pattern = r"\$" + "-".join([r"(\w*)"]*i)
-        subst = r"$" + "_".join([rf"\{j}" for j in range(1, i+1)])
-        code = re.sub(pattern, subst, code)
-    return code
 
 
 def transpile_macros(code: str) -> str:
@@ -283,10 +265,6 @@ def replace_macro_callables(code: str) -> str:
         #     print(f"Matched {pattern}")
         code = re.sub(pattern, subst, code, flags=re.MULTILINE)
     return code
-
-
-def replace_constants(code, ):
-    pass
 
 
 if __name__ == "__main__":
