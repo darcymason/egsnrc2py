@@ -1,13 +1,17 @@
 import re
-from typing import Tuple
+from typing import Tuple, List
 from pprint import pprint
 from textwrap import dedent
+
 from egsnrc2py._util import nested_brace_value, fix_identifiers
 from egsnrc2py.config import (
     default_float, AUTO_TRANSPILE_PATH, MORTRAN_SOURCE_PATH,
     INTEGER, REAL, LOGICAL
 )
 
+import logging
+
+logger = logging.getLogger('egsnrc2py')
 
 def test_eval_subst(code):
     pattern = r"\$EVALUATE (\w*) USING (\w*)\((\w*)\);?"
@@ -29,23 +33,6 @@ def find_all_macros_used(code):
     pattern = r" *?(\$[\w-]+)" #r"^ *?(\$[-\w]*)"
     matches = re.findall(pattern, code)
     return set(matches)
-
-
-def find_macros_including_macros(code):
-    """Matches where the WITH replace also has $ in it"""
-    # pattern = r"REPLACE\s*?\{\s*?(\$[\w-]*);?\}\s*?WITH\s*?\{(.*\$.*);?\}"
-    # matches = [m for m in re.finditer(pattern, code, flags=re.MULTILINE)]
-    # return [m.groups() for m in matches]
-
-    return {
-        k:v for k,v in find_all_replaces(code).items()
-        if '$' in v
-    }
-
-
-def find_all_replaces(code):
-    pattern = r"REPLACE\s*?\{(.*)\}\s*?WITH\s*?\{(.*)\}"
-    return dict(m.groups() for m in re.finditer(pattern, code))
 
 
 def escape(s) -> str:
@@ -75,7 +62,7 @@ def macro_types(all_from_to) -> Tuple[list, list, list, list]:
     defined_block = []
     other = []
 
-    for m_from, m_to in all_from_to.items():
+    for m_from, m_to in all_from_to:
         # See if called - if alone on a line (except comments):
         if m_from.startswith(("$COMIN", ";COMIN", "$DEFINE", "$DECLARE")):
             defined_block.append((m_from, m_to))
@@ -122,20 +109,27 @@ def generate_macros_py(filename:str, code: str) -> None:
 
 def map_replace_from_to(code: str) -> str:
     """Goes through the .macros `code` and determines all REPLACE .. WITH"""
-    all_from_to = {}
-    pattern = r"^ *REPLACE\s*\{(.*)\}\s*?WITH\s*?\{"
+    all_from_to = []
+    all_di = {}
+    pattern = r"^ *REPLACE\s*\{(.*?)\}\s*?WITH\s*?\{"
     i = 0
-    subcode = code  # need to update search string to exclude REPLACE in val
+    re_pattern = re.compile(pattern, re.MULTILINE)
+    # subcode = code  # need to update search string to exclude REPLACE in val
     while True:
-        match = re.search(pattern, subcode, flags=re.MULTILINE)
+        match = re_pattern.search(code, i)
         if not match:
             break
         replace_from = match.group(1)
-        replace_to = nested_brace_value(subcode, match.end())
-        all_from_to[replace_from] = replace_to
+        replace_to = nested_brace_value(code, match.end())
+        if replace_from in all_di:
+            logger.warning(
+                f"Repeat definition of macro '{replace_from}' from "
+                f"'{all_di[replace_from]}' to {replace_to}"
+            )
+        all_from_to.append((replace_from, replace_to))
+        all_di[replace_from] = replace_to
         # print(replace_from, " -> ", replace_to)
-        i += len(match.group(0)) + len(replace_to) + 1  # one extra for }
-        subcode = code[i:]
+        i = match.end() + len(replace_to) + 1  # one extra for }
 
     return all_from_to
 
@@ -154,7 +148,7 @@ def get_type(m_to):
     return None
 
 
-def modified_macros(egsnrc_code, egsnrc_macros) -> None:
+def modified_macros(egsnrc_code, egsnrc_macros) -> Tuple[str, List[Tuple[str,str,str]]]:
     """Return egsnrc.macros with our custom (partial) replacements
 
     The custom one will be handed to modified EGSnrc compile_user_script
@@ -180,15 +174,18 @@ def modified_macros(egsnrc_code, egsnrc_macros) -> None:
     # generate sorted list - largest first in case some names are subset of others
     new_macros = egsnrc_macros
     parameters = []
-    sorted_from = sorted(all_from_to, key=lambda x: len(x), reverse=True)
+    # sorted_from = sorted(all_from_to, key=lambda x: len(x), reverse=True)
     constant_set = set(mac[0] for mac in constant_macros)  # faster lookup than a list
-    for m_from in sorted_from:
-        m_to = all_from_to[m_from]
+    for m_from, m_to in all_from_to:
         if m_from in constant_set:
             # doubled {{ and }} needed for f-string to give a single
-            pattern = rf" *REPLACE\s*?\{{{m_from}\}}\s*?WITH\s*?\{{{m_to}\}}"
+            escaped_from = m_from.replace('$',r'\$')
+            pattern = r"^( *)REPLACE\s*?\{{{_from}\}}\s*?WITH\s*?\{{{to}\}}"
+            to_pattern = r"\1REPLACE {{{_from}}} WITH {{{to}}}"
+            from_pattern = pattern.format(_from=escaped_from, to = m_to)
             bare_name = m_from.replace("$", "")  # 'from' name without $
-            new_macros = re.sub(pattern, bare_name, new_macros)
+            to_pattern = to_pattern.format(_from=m_from, to=bare_name)
+            new_macros = re.sub(from_pattern, to_pattern, new_macros, flags=re.MULTILINE)
             _type = get_type(m_to)
             if m_to == ".false.":
                 m_to = "False"
@@ -208,14 +205,20 @@ def modified_macros(egsnrc_code, egsnrc_macros) -> None:
 
 def write_new_macros_file(filename, macros_code) -> None:
     with open(filename, "w") as f:
-        f.write(egsnrc_macros)
+        f.write(macros_code)
 
 def write_params_file(filename, parameters) -> None:
     with open(filename, "w") as f:
         f.write("import numpy as np\n\n")
-        for name, _type, value in sorted(parameters):
+        for name, _type, value in parameters:
             f.write(f"{name}: {_type} = {value}\n")
 
+def replace_PARAMETER(code: str) -> str:
+    """Replace PARAMETER with REPLACE..WITH"""
+    pattern = r"^( *)PARAMETER\s*(.*?)\s*?=\s*?(.*?);(.*)$"
+    repl_with = r"\1REPLACE {\2} WITH {\3}\4"
+    code = re.sub(pattern, repl_with, code, flags=re.MULTILINE)
+    return code
 
 if __name__ == "__main__":
 
@@ -226,17 +229,31 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         egsnrc_macros = f.read()
 
-    egsnrc_macros = fix_identifiers(egsnrc_macros)
     # egsnrc_macros = dedent("""REPLACE {$MAXL_MS}    WITH {63}
+    #     REPLACE {$MXSGE} WITH {1}
+    #     PARAMETER $MXSGE=5;
     #     REPLACE {$MAXQ_MS}    WITH {7}
     #     REPLACE {$MAXU_MS}    WITH {31}
+    #     PARAMETER $MXSEKE=1;
     #     REPLACE {$0-MAXL_MS}  WITH {0:63}
+
     #     """
     # )
+    # egsnrc_macros = "PARAMETER $MXSGE=1;\n    PARAMETER $MXSEKE=1;"
+
     with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
         egsnrc_code = f.read()
 
     filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
+
+    # PROCESS ---------------------
+    egsnrc_macros = fix_identifiers(egsnrc_macros)
+
+    # change PARAMETER back to REPLACE..WITH
+    egsnrc_macros = replace_PARAMETER(egsnrc_macros)
+
+    # Replace constants/parameters with their name minus the $ (will be loaded
+    #   in Python by that name)
     macros_code, parameters = modified_macros(egsnrc_code, egsnrc_macros)
     write_new_macros_file(filename, macros_code)
 

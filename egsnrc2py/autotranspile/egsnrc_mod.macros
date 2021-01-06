@@ -81,7 +81,7 @@ REPLACE {$IMPLICIT_NONE;} WITH {implicit none;}
 
 "=================================================================="
 "SELECT THE FORTRAN STANDARD TO BE USED (1966 OR 1977)             "
-REPLACE {$FORTVER} WITH {1977}
+REPLACE {$FORTVER} WITH {FORTVER}
 "=================================================================="
 
 "******************************************************************"
@@ -176,78 +176,78 @@ REPLACE {$DUMP#,#;} WITH
 REPLACE {PARAMETER #=#;} WITH
    { REPLACE {{P1}} WITH {{P2}}}
 
-PARAMETER $MXMED=10;      "MAX. NO. OF DIFFERENT MEDIA (EXCL. VAC.)"
-PARAMETER $MXREG=2000;    "MAXIMUM NO. OF REGIONS ALLOCATED"
-PARAMETER $MXSTACK=40;    "STACK SIZE"
-PARAMETER $MXVRT1=1000;   "NO. OF REPRESENTATIVE ANGLES IN VERT1"
-PARAMETER $FMXVRT1=1000.; "FLOATING $MXVRT1"
-PARAMETER $MXPWR2I=50;    "SIZE OF TABLE OF INVERSE POWERS OF TWO"
-PARAMETER $MXJREFF=200;   "SIZE OF MULTIPLE SCATTERING JREFF MAP"
-PARAMETER $MSSTEPS=16;    "NO. OF MULTIPLE SCATTERING STEP SIZES"
-PARAMETER $MXVRT2=100;    "DISTRBTN OF NONOVERLAPPING PARTS OF VERT"
+REPLACE {$MXMED} WITH {MXMED}      "MAX. NO. OF DIFFERENT MEDIA (EXCL. VAC.)"
+REPLACE {$MXREG} WITH {MXREG}    "MAXIMUM NO. OF REGIONS ALLOCATED"
+REPLACE {$MXSTACK} WITH {MXSTACK}    "STACK SIZE"
+REPLACE {$MXVRT1} WITH {MXVRT1}   "NO. OF REPRESENTATIVE ANGLES IN VERT1"
+REPLACE {$FMXVRT1} WITH {FMXVRT1} "FLOATING $MXVRT1"
+REPLACE {$MXPWR2I} WITH {MXPWR2I}    "SIZE OF TABLE OF INVERSE POWERS OF TWO"
+REPLACE {$MXJREFF} WITH {MXJREFF}   "SIZE OF MULTIPLE SCATTERING JREFF MAP"
+REPLACE {$MSSTEPS} WITH {MSSTEPS}    "NO. OF MULTIPLE SCATTERING STEP SIZES"
+REPLACE {$MXVRT2} WITH {MXVRT2}    "DISTRBTN OF NONOVERLAPPING PARTS OF VERT"
 
 ;
 "FOLLOWING DEFINE MAX. NO. OF INTERVALS FOR FIT TO FUNCTIONS"
-PARAMETER $MXSGE=400;     "GAMMA SMALL ENERGY INTERVALS"
-PARAMETER $MXGE=2000;     "GAMMA MAPPED ENERGY INTERVALS"
-PARAMETER $MXSEKE=300;    "ELECTRON SMALL ENERGY INTERVALS"
-PARAMETER $MXEKE=500;     "ELECTRON MAPPED ENERGY INTERVALS"
-PARAMETER $MXEL=50;       "MAXIMUM # OF ELEMENTS IN A MEDIUM"
-PARAMETER $MXLEKE=100;    "ELECTRON ENERGY INTERVALS BELOW EKELIM"
-PARAMETER $MXCMFP=100;    "CUMULATIVE ELECTRON MEAN-FREE-PATH"
-PARAMETER $MXRANGE=100;   "ELECTRON RANGE"
-PARAMETER $MXBLC=20;      "MOLIERE'S LOWER CASE B"
-PARAMETER $MXRNTH=20;     "RANDOM NUMBER FOR SUBMEDIAN ANGLES"
-PARAMETER $MXRNTHI=20;    "RANDOM NUMBER FOR SUPERMEDIAN ANGLES"
-PARAMETER $MXRAYFF=100;   "RAYLEIGH ATOMIC FORM FACTOR"
-PARAMETER $RAYCDFSIZE=100;"CDF from RAYLEIGH FORM FACTOR SQUARED"
-PARAMETER $MXSINC=1002;   "ANGLE INTERVALS IN (0,5*PI/2) FOR SINE"
+REPLACE {$MXSGE} WITH {MXSGE}     "GAMMA SMALL ENERGY INTERVALS"
+REPLACE {$MXGE} WITH {MXGE}     "GAMMA MAPPED ENERGY INTERVALS"
+REPLACE {$MXSEKE} WITH {MXSEKE}    "ELECTRON SMALL ENERGY INTERVALS"
+REPLACE {$MXEKE} WITH {MXEKE}     "ELECTRON MAPPED ENERGY INTERVALS"
+REPLACE {$MXEL} WITH {MXEL}       "MAXIMUM # OF ELEMENTS IN A MEDIUM"
+REPLACE {$MXLEKE} WITH {MXLEKE}    "ELECTRON ENERGY INTERVALS BELOW EKELIM"
+REPLACE {$MXCMFP} WITH {MXCMFP}    "CUMULATIVE ELECTRON MEAN-FREE-PATH"
+REPLACE {$MXRANGE} WITH {MXRANGE}   "ELECTRON RANGE"
+REPLACE {$MXBLC} WITH {MXBLC}      "MOLIERE'S LOWER CASE B"
+REPLACE {$MXRNTH} WITH {MXRNTH}     "RANDOM NUMBER FOR SUBMEDIAN ANGLES"
+REPLACE {$MXRNTHI} WITH {MXRNTHI}    "RANDOM NUMBER FOR SUPERMEDIAN ANGLES"
+REPLACE {$MXRAYFF} WITH {MXRAYFF}   "RAYLEIGH ATOMIC FORM FACTOR"
+REPLACE {$RAYCDFSIZE} WITH {RAYCDFSIZE}"CDF from RAYLEIGH FORM FACTOR SQUARED"
+REPLACE {$MXSINC} WITH {MXSINC}   "ANGLE INTERVALS IN (0,5*PI/2) FOR SINE"
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
 "THE FOLLOWING ARE PARAMETERS FOR AUSGAB CALLS:"
-PARAMETER $MXAUS=35;       "CHANGE IF MORE AUSGAB CALLS ARE ADDED"
-PARAMETER $MXAUSM5=30;     "SET THIS TO $MXAUS VALUE LESS 5"
+REPLACE {$MXAUS} WITH {MXAUS}       "CHANGE IF MORE AUSGAB CALLS ARE ADDED"
+REPLACE {$MXAUSM5} WITH {MXAUSM5}     "SET THIS TO $MXAUS VALUE LESS 5"
 
 "FIRST FIVE AUSGAB CALLS BELOW TURNED ON IN BLOCK DATA (DEFAULT)"
-PARAMETER $TRANAUSB=0;    "BEFORE TRANSPORT"
-PARAMETER $EGSCUTAUS=1;   "ENERGY BELOW ECUT OR PCUT"
-PARAMETER $PEGSCUTAUS=2;  "ENERGY BELOW AE OR AP"
-PARAMETER $USERDAUS=3;    "USER REQUESTED DISCARD"
-PARAMETER $PHOTXAUS=4;    "FLUORESCENT PHOTON DISCARD"
+REPLACE {$TRANAUSB} WITH {TRANAUSB}    "BEFORE TRANSPORT"
+REPLACE {$EGSCUTAUS} WITH {EGSCUTAUS}   "ENERGY BELOW ECUT OR PCUT"
+REPLACE {$PEGSCUTAUS} WITH {PEGSCUTAUS}  "ENERGY BELOW AE OR AP"
+REPLACE {$USERDAUS} WITH {USERDAUS}    "USER REQUESTED DISCARD"
+REPLACE {$PHOTXAUS} WITH {PHOTXAUS}    "FLUORESCENT PHOTON DISCARD"
 
 "THE REMAINING 23 ARE TURNED OFF IN BLOCK DATA (DEFAULT)"
-PARAMETER $TRANAUSA=5;    "AFTER TRANSPORT"
-PARAMETER $BREMAUSB=6;    "BEFORE BREMS CALL"
-PARAMETER $BREMAUSA=7;    "AFTER BREMS CALL"
-PARAMETER $MOLLAUSB=8;    "BEFORE MOLLER CALL"
-PARAMETER $MOLLAUSA=9;    "AFTER MOLLER CALL"
-PARAMETER $BHABAUSB=10;   "BEFORE BHABHA CALL"
-PARAMETER $BHABAUSA=11;   "AFTER BHABHA CALL"
-PARAMETER $ANNIHFAUSB=12; "BEFORE ANNIH CALL"
-PARAMETER $ANNIHFAUSA=13; "AFTER ANNIH CALL"
-PARAMETER $ANNIHRAUSB=28; "BEFORE POSITRON ANNIH AT REST"
-PARAMETER $ANNIHRAUSA=14; "POSITRON ANNIHILATED AT REST"
-PARAMETER $PAIRAUSB=15;   "BEFORE PAIR CALL"
-PARAMETER $PAIRAUSA=16;   "AFTER PAIR CALL"
-PARAMETER $COMPAUSB=17;   "BEFORE COMPT CALL"
-PARAMETER $COMPAUSA=18;   "AFTER COMPT CALL"
-PARAMETER $PHOTOAUSB=19;  "BEFORE PHOTO CALL"
-PARAMETER $PHOTOAUSA=20;  "AFTER PHOTO CALL"
-PARAMETER $UPHIAUSB=21;   "ENTERED UPHI"
-PARAMETER $UPHIAUSA=22;   "LEFT UPHI"
-PARAMETER $RAYLAUSB=23;   "BEFORE RAYLEIGH EVENT"
-PARAMETER $RAYLAUSA=24;   "AFTER RAYLEIGH EVENT"
-PARAMETER $FLUORTRA=25;   "A fluorescent transition just occurred"
-PARAMETER $COSKROTRA=26;  "A Coster-Kronig transition just occurred"
-PARAMETER $AUGERTRA=27;   "An Auger transition just occurred"
+REPLACE {$TRANAUSA} WITH {TRANAUSA}    "AFTER TRANSPORT"
+REPLACE {$BREMAUSB} WITH {BREMAUSB}    "BEFORE BREMS CALL"
+REPLACE {$BREMAUSA} WITH {BREMAUSA}    "AFTER BREMS CALL"
+REPLACE {$MOLLAUSB} WITH {MOLLAUSB}    "BEFORE MOLLER CALL"
+REPLACE {$MOLLAUSA} WITH {MOLLAUSA}    "AFTER MOLLER CALL"
+REPLACE {$BHABAUSB} WITH {BHABAUSB}   "BEFORE BHABHA CALL"
+REPLACE {$BHABAUSA} WITH {BHABAUSA}   "AFTER BHABHA CALL"
+REPLACE {$ANNIHFAUSB} WITH {ANNIHFAUSB} "BEFORE ANNIH CALL"
+REPLACE {$ANNIHFAUSA} WITH {ANNIHFAUSA} "AFTER ANNIH CALL"
+REPLACE {$ANNIHRAUSB} WITH {ANNIHRAUSB} "BEFORE POSITRON ANNIH AT REST"
+REPLACE {$ANNIHRAUSA} WITH {ANNIHRAUSA} "POSITRON ANNIHILATED AT REST"
+REPLACE {$PAIRAUSB} WITH {PAIRAUSB}   "BEFORE PAIR CALL"
+REPLACE {$PAIRAUSA} WITH {PAIRAUSA}   "AFTER PAIR CALL"
+REPLACE {$COMPAUSB} WITH {COMPAUSB}   "BEFORE COMPT CALL"
+REPLACE {$COMPAUSA} WITH {COMPAUSA}   "AFTER COMPT CALL"
+REPLACE {$PHOTOAUSB} WITH {PHOTOAUSB}  "BEFORE PHOTO CALL"
+REPLACE {$PHOTOAUSA} WITH {PHOTOAUSA}  "AFTER PHOTO CALL"
+REPLACE {$UPHIAUSB} WITH {UPHIAUSB}   "ENTERED UPHI"
+REPLACE {$UPHIAUSA} WITH {UPHIAUSA}   "LEFT UPHI"
+REPLACE {$RAYLAUSB} WITH {RAYLAUSB}   "BEFORE RAYLEIGH EVENT"
+REPLACE {$RAYLAUSA} WITH {RAYLAUSA}   "AFTER RAYLEIGH EVENT"
+REPLACE {$FLUORTRA} WITH {FLUORTRA}   "A fluorescent transition just occurred"
+REPLACE {$COSKROTRA} WITH {COSKROTRA}  "A Coster-Kronig transition just occurred"
+REPLACE {$AUGERTRA} WITH {AUGERTRA}   "An Auger transition just occurred"
 "Ali:photonuc, 2 lines"
 " note that 28 is already used for positron annih at rest - see above"
-PARAMETER $PHOTONUCAUSB=29; "BEFORE PHOTONUCLEAR EVENT"
-PARAMETER $PHOTONUCAUSA=30; "AFTER PHOTONUCLEAR EVENT"
-PARAMETER $EIIB=31;   "Before EII"
-PARAMETER $EIIA=32;   "After EII"
-PARAMETER $SPHOTONA=33;   "After sub-threshold photon energy deposition"
-PARAMETER $SELECTRONA=34;   "After sub-threshold electron energy deposition"
+REPLACE {$PHOTONUCAUSB} WITH {PHOTONUCAUSB} "BEFORE PHOTONUCLEAR EVENT"
+REPLACE {$PHOTONUCAUSA} WITH {PHOTONUCAUSA} "AFTER PHOTONUCLEAR EVENT"
+REPLACE {$EIIB} WITH {EIIB}   "Before EII"
+REPLACE {$EIIA} WITH {EIIA}   "After EII"
+REPLACE {$SPHOTONA} WITH {SPHOTONA}   "After sub-threshold photon energy deposition"
+REPLACE {$SELECTRONA} WITH {SELECTRONA}   "After sub-threshold electron energy deposition"
 
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
@@ -255,21 +255,21 @@ REPLACE {$AUSCALL(#);} WITH
    {IARG={P1} ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]} ;
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 "TEMPORARY OVER-RIDES FOR SOME OF THE ABOVE"
-PARAMETER $MXSGE=1;
-PARAMETER $MXSEKE=1;
-PARAMETER $MXLEKE=1;
-PARAMETER $MXCMFP=1;
-PARAMETER $MXRANGE=1;
-PARAMETER $MXBLC=1;
-PARAMETER $MXRNTH=1;
-PARAMETER $MXRNTHI=1;
+REPLACE {$MXSGE} WITH {MXSGE}
+REPLACE {$MXSEKE} WITH {MXSEKE}
+REPLACE {$MXLEKE} WITH {MXLEKE}
+REPLACE {$MXCMFP} WITH {MXCMFP}
+REPLACE {$MXRANGE} WITH {MXRANGE}
+REPLACE {$MXBLC} WITH {MXBLC}
+REPLACE {$MXRNTH} WITH {MXRNTH}
+REPLACE {$MXRNTHI} WITH {MXRNTHI}
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
 "THE FOLLOWING DEFINE PRECISION USED IN ENERGY COMPUTATIONS"
 "THE LATTER OF THE TWO WILL BE IN EFFECT"
 REPLACE {$ENERGYPRECISION} WITH {;REAL }"SINGLE PRECISION"
 REPLACE {$ENERGYPRECISION} WITH {;DOUBLE PRECISION }
-REPLACE {$MAX_INT} WITH {2147483647} "2^31-1"
+REPLACE {$MAX_INT} WITH {MAX_INT} "2^31-1"
 "^--- limits number of particles and hence phase space file size"
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
@@ -344,13 +344,13 @@ REPLACE {;COMIN/BOUNDS/;} WITH
 "------------------------------------------------------------------"
 
 ;
-REPLACE {$MXBREN} WITH {57}
-REPLACE {$MXBRXX} WITH {54}
-REPLACE {$MXBREL} WITH {100}
-REPLACE {$MXGAUSS} WITH {64}
-REPLACE {$MXBRES} WITH {100}
-REPLACE {$MXBRXS} WITH {50}
-REPLACE {$NIST_ENERGY_SCALE} WITH {1.0}
+REPLACE {$MXBREN} WITH {MXBREN}
+REPLACE {$MXBRXX} WITH {MXBRXX}
+REPLACE {$MXBREL} WITH {MXBREL}
+REPLACE {$MXGAUSS} WITH {MXGAUSS}
+REPLACE {$MXBRES} WITH {MXBRES}
+REPLACE {$MXBRXS} WITH {MXBRXS}
+REPLACE {$NIST_ENERGY_SCALE} WITH {NIST_ENERGY_SCALE}
 
 REPLACE {$NIST_DATA_UNIT} WITH {i_nist_data}
 ;
@@ -407,10 +407,10 @@ REPLACE {;COMIN/NIST-BREMS/;} WITH {;
   $INTEGER nb_idata;
 };
 
-REPLACE {$NRC_PAIR_NXX} WITH {65};
-REPLACE {$NRC_PAIR_NEE} WITH {84};
-REPLACE {$NRC_PAIR_NX_1} WITH {64};
-REPLACE {$NRC_PAIR_NE_1} WITH {83};
+REPLACE {$NRC_PAIR_NXX} WITH {NRC_PAIR_NXX};
+REPLACE {$NRC_PAIR_NEE} WITH {NRC_PAIR_NEE};
+REPLACE {$NRC_PAIR_NX_1} WITH {NRC_PAIR_NX_1};
+REPLACE {$NRC_PAIR_NE_1} WITH {NRC_PAIR_NE_1};
 
 REPLACE {;COMIN/NRC-PAIR-DATA/;} WITH {;
     common/nrc_pair/ nrcp_fdata($NRC_PAIR_NXX,$NRC_PAIR_NEE,$MXMED),
@@ -426,7 +426,7 @@ REPLACE {;COMIN/NRC-PAIR-DATA/;} WITH {;
 "------------------------------------------------------------------------"
 "*** TRIPLET DATA                                                        "
 "------------------------------------------------------------------------"
-REPLACE {$MAX_TRIPLET} WITH {250}
+REPLACE {$MAX_TRIPLET} WITH {MAX_TRIPLET}
 REPLACE {;COMIN/TRIPLET-DATA/;} WITH {;
         common/triplet_data/ a_triplet($MAX_TRIPLET,$MXMED),
                              b_triplet($MAX_TRIPLET,$MXMED),
@@ -438,8 +438,8 @@ REPLACE {;COMIN/TRIPLET-DATA/;} WITH {;
 "------------------------------------------------------------------------"
 "*** COMPTON-DATA -- Incoherent scattering data                          "
 "------------------------------------------------------------------------"
-REPLACE {$MXTOTSH}   WITH {1538} "Total number of shells for Z=1..100    "
-REPLACE {$MXMDSH}    WITH {200}   "Max. number of shells per medium       "
+REPLACE {$MXTOTSH} WITH {MXTOTSH} "Total number of shells for Z=1..100    "
+REPLACE {$MXMDSH} WITH {MXMDSH}   "Max. number of shells per medium       "
 REPLACE {$INCOHUNIT} WITH {i_incoh}   "Unit number for compton data           "
 
 REPLACE {;COMIN/COMPTON-DATA/;} WITH
@@ -484,12 +484,12 @@ REPLACE {;COMIN/COMPTON-DATA/;} WITH
 "             cross sections needed to sample the element the photon"
 "             is interacting with.
 "------------------------------------------------------------------ "
-REPLACE {$MXELEMENT} WITH {100}  " Number of elements               "
-REPLACE {$MXSHXSEC}  WITH {30}   " Number of shells available       "
-REPLACE {$MXSHELL}   WITH {6}    " Number of shells treated         "
-REPLACE {$MXINTER}   WITH {5}    " $MXSHELL_1                       "
-REPLACE {$MXTRANS}   WITH {39}   " Number of possible transitions   "
-REPLACE {$MXEDGE}    WITH {16}   " max. number of edges above 1 keV "
+REPLACE {$MXELEMENT} WITH {MXELEMENT}  " Number of elements               "
+REPLACE {$MXSHXSEC} WITH {MXSHXSEC}   " Number of shells available       "
+REPLACE {$MXSHELL} WITH {MXSHELL}    " Number of shells treated         "
+REPLACE {$MXINTER} WITH {MXINTER}    " $MXSHELL_1                       "
+REPLACE {$MXTRANS} WITH {MXTRANS}   " Number of possible transitions   "
+REPLACE {$MXEDGE} WITH {MXEDGE}   " max. number of edges above 1 keV "
 REPLACE {$PHOTOUNIT} WITH {i_photo_relax} " unit number for photo_relax.data "
 REPLACE {$PHOCSUNIT} WITH {i_photo_cs}   " unit number for photo_cs.data    "
 
@@ -590,9 +590,9 @@ REPLACE {;COMIN/ELECIN/;} WITH
 "                                                                           "
 "****************************************************************************
 
-REPLACE {$MAX_EII_SHELLS} WITH {40};  "Maximum number of shells participating"
+REPLACE {$MAX_EII_SHELLS} WITH {MAX_EII_SHELLS};  "Maximum number of shells participating"
                                       "in EII in a simulation                "
-REPLACE {$N_EII_BINS} WITH {250};     "Number of bins for EII x-section      "
+REPLACE {$N_EII_BINS} WITH {N_EII_BINS};     "Number of bins for EII x-section      "
                                       "interpolations                        "
 REPLACE {$MAX_EII_BINS} WITH {{COMPUTE $N_EII_BINS*$MAX_EII_SHELLS}};
 "We store the EII x-section interpolation coefficients in 1D arrays  "
@@ -671,11 +671,11 @@ REPLACE {;COMIN/RELAX-USER/;} WITH {;
 "the i'th shell of element Z in the long shell list.                       "
 "***************************************************************************"
 
-REPLACE {$MXESHLL} WITH {30}     "max. number of shells for an element"
-REPLACE {$MAXSHELL} WITH {3000}  "max. number of shells"
-REPLACE {$MAXRELAX} WITH {10000} "max. number of relaxations channels"
-REPLACE {$MAXVAC} WITH {100}     "max. number of vacancies"
-REPLACE {$MAXTRANS} WITH {300}   "max. number of transitions per element"
+REPLACE {$MXESHLL} WITH {MXESHLL}     "max. number of shells for an element"
+REPLACE {$MAXSHELL} WITH {MAXSHELL}  "max. number of shells"
+REPLACE {$MAXRELAX} WITH {MAXRELAX} "max. number of relaxations channels"
+REPLACE {$MAXVAC} WITH {MAXVAC}     "max. number of vacancies"
+REPLACE {$MAXTRANS} WITH {MAXTRANS}   "max. number of transitions per element"
 "============================================================"
 " Set input key 'Atomic relaxations' to 'simple' to recover original
 " implementation which allows photoelectric interactions with <M> and
@@ -772,8 +772,8 @@ X-OPTIONS/;
 "***************************************************************************"
 "============================================================"
 REPLACE {$RELAX_CUTOFF} WITH {0.001"threshold energy for outer shells"}
-REPLACE {$MXPESHELL} WITH {16} "K,L1..L3,M1..M5,N1..N7 + outer shell"
-REPLACE {$MXNE} WITH {500}     "number of energy points per shell "
+REPLACE {$MXPESHELL} WITH {MXPESHELL} "K,L1..L3,M1..M5,N1..N7 + outer shell"
+REPLACE {$MXNE} WITH {MXNE}     "number of energy points per shell "
 "============================================================"
 REPLACE {;COMIN/PE-SHELL-DATA/;} WITH {;
 
@@ -845,23 +845,23 @@ REPLACE {;COMIN/ET-Control/;} WITH  "ET stands for Electron Transport"
 
 " Screened Rutherford MS data "
 
-REPLACE {$MAXL_MS}    WITH {63}
-REPLACE {$MAXQ_MS}    WITH {7}
-REPLACE {$MAXU_MS}    WITH {31}
-REPLACE {\$from0_MAXL_MS}  WITH {0:63}
-REPLACE {\$from0_MAXQ_MS}  WITH {0:7}
-REPLACE {\$from0_MAXU_MS}  WITH {0:31}
-REPLACE {$LAMBMIN_MS} WITH {1.}
-REPLACE {$LAMBMAX_MS} WITH {1e5}
-REPLACE {$QMIN_MS}    WITH {1e-3}
-REPLACE {$QMAX_MS}    WITH {0.5}
+REPLACE {$MAXL_MS} WITH {MAXL_MS}
+REPLACE {$MAXQ_MS} WITH {MAXQ_MS}
+REPLACE {$MAXU_MS} WITH {MAXU_MS}
+REPLACE {$from0_MAXL_MS}  WITH {0:63}
+REPLACE {$from0_MAXQ_MS}  WITH {0:7}
+REPLACE {$from0_MAXU_MS}  WITH {0:31}
+REPLACE {$LAMBMIN_MS} WITH {LAMBMIN_MS}
+REPLACE {$LAMBMAX_MS} WITH {LAMBMAX_MS}
+REPLACE {$QMIN_MS} WITH {QMIN_MS}
+REPLACE {$QMAX_MS} WITH {QMAX_MS}
 
 REPLACE {COMIN/MS-Data/;} WITH {
   common/ms_data/
-              ums_array(\$from0_MAXL_MS,\$from0_MAXQ_MS,\$from0_MAXU_MS),
-              fms_array(\$from0_MAXL_MS,\$from0_MAXQ_MS,\$from0_MAXU_MS),
-              wms_array(\$from0_MAXL_MS,\$from0_MAXQ_MS,\$from0_MAXU_MS),
-              ims_array(\$from0_MAXL_MS,\$from0_MAXQ_MS,\$from0_MAXU_MS),
+              ums_array($from0_MAXL_MS,$from0_MAXQ_MS,$from0_MAXU_MS),
+              fms_array($from0_MAXL_MS,$from0_MAXQ_MS,$from0_MAXU_MS),
+              wms_array($from0_MAXL_MS,$from0_MAXQ_MS,$from0_MAXU_MS),
+              ims_array($from0_MAXL_MS,$from0_MAXQ_MS,$from0_MAXU_MS),
               llammin,llammax,dllamb,dllambi,dqms,dqmsi;
   real*4      ums_array,fms_array,wms_array,
               llammin,llammax,dllamb,dllambi,dqms,dqmsi;
@@ -871,17 +871,17 @@ REPLACE {COMIN/MS-Data/;} WITH {
 
 " spin effect data used in an additional rejection loop "
 
-REPLACE {$MAXE_SPIN}   WITH {15}
+REPLACE {$MAXE_SPIN} WITH {MAXE_SPIN}
 REPLACE {$MAXE_SPI1}   WITH {{COMPUTE 2*$MAXE_SPIN+1}}
-REPLACE {$MAXQ_SPIN}   WITH {15}
-REPLACE {$MAXU_SPIN}   WITH {31}
-REPLACE {\$from0_MAXE_SPI1} WITH {0:$MAXE_SPI1}
-REPLACE {\$from0_MAXQ_SPIN} WITH {0:$MAXQ_SPIN}
-REPLACE {\$from0_MAXU_SPIN} WITH {0:$MAXU_SPIN}
+REPLACE {$MAXQ_SPIN} WITH {MAXQ_SPIN}
+REPLACE {$MAXU_SPIN} WITH {MAXU_SPIN}
+REPLACE {$from0_MAXE_SPI1} WITH {0:$MAXE_SPI1}
+REPLACE {$from0_MAXQ_SPIN} WITH {0:$MAXQ_SPIN}
+REPLACE {$from0_MAXU_SPIN} WITH {0:$MAXU_SPIN}
 
 REPLACE {COMIN/Spin-Data/;} WITH {
   common/spin_data/
-              spin_rej($MXMED,0:1,\$from0_MAXE_SPI1,\$from0_MAXQ_SPIN,\$from0_MAXU_SPIN),
+              spin_rej($MXMED,0:1,$from0_MAXE_SPI1,$from0_MAXQ_SPIN,$from0_MAXU_SPIN),
               espin_min,espin_max,espml,b2spin_min,b2spin_max,
               dbeta2,dbeta2i,dlener,dleneri,dqq1,dqq1i,
               fool_intel_optimizer;
@@ -1391,12 +1391,12 @@ REPLACE {$SET_TVSTEP;} WITH
 }
 ;
 
-REPLACE {$ENEPS} WITH {0.0001}
+REPLACE {$ENEPS} WITH {ENEPS}
             "DIFFERENCE BETWEEN ECUT AND END POINT ENERGY FOR"
             "RANGE CALCULATION"
 
-REPLACE {$EPSEMFP} WITH {1.E-8}  "SMALLEST ELECTRON MFP VALUE"
-REPLACE {$EPSGMFP} WITH {1.E-8}  "SMALLEST GAMMA MFP VALUE"
+REPLACE {$EPSEMFP} WITH {EPSEMFP}  "SMALLEST ELECTRON MFP VALUE"
+REPLACE {$EPSGMFP} WITH {EPSGMFP}  "SMALLEST GAMMA MFP VALUE"
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
 "THE FOLLOWING ARE UTILITY AND OTHER MACROS FOR THE USER"
@@ -1648,7 +1648,7 @@ REPLACE{$EMFIELD_PI;}WITH{;}
 REPLACE{$EM_FIELD_SS;}WITH{;}
 REPLACE{$ADD_WORK_EM_FIELD;}WITH{;}
 REPLACE{$EMFieldInVacuum;}WITH{;}
-REPLACE{$EM_MACROS_ACTIVE}WITH{.false.}
+REPLACE {$EM_MACROS_ACTIVE} WITH {EM_MACROS_ACTIVE}
 ;  "---------- BUFFER FLUSH SEMICOLON ----------"
 
 "------------------------------------------------------------------"
@@ -1675,7 +1675,7 @@ REPLACE{$EM_MACROS_ACTIVE}WITH{.false.}
 "        MACRO-ROUTINES FOR PLANE GEOMETRY  (SLAC VERSION)         "
 "------------------------------------------------------------------"
 ;
-PARAMETER $MXPLNS=100;     "MAX. NO. OF PLANES"
+REPLACE {$MXPLNS} WITH {MXPLNS}     "MAX. NO. OF PLANES"
 
 "PLADTA---COMMON BLOCK FOR $PLANE1 AND $PLANE2 MACROS"
 REPLACE {;COMIN/PLADTA/;} WITH {
@@ -1729,8 +1729,8 @@ REPLACE {$PLAN2X(#,#,#,#,#,#);} WITH {
 "      MACRO-ROUTINE FOR CYLINRICAL GEOMETRY  (CERN VERSION)       "
 "------------------------------------------------------------------"
 
-PARAMETER $MXCYLS=75;      "MAX. NO. OF CYLINDERS"
-PARAMETER $DELCYL=1.0E-04; "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
+REPLACE {$MXCYLS} WITH {MXCYLS}      "MAX. NO. OF CYLINDERS"
+REPLACE {$DELCYL} WITH {DELCYL} "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
 
 "CYLDTA---COMMON BLOCK FOR $CYLNDR MACRO"
 REPLACE {;COMIN/CYLDTA/;} WITH {
@@ -1771,8 +1771,8 @@ REPLACE {$CYL2(#,#,#,#);} WITH {
 "     MACRO-ROUTINE FOR CERN CONICAL GEOMETRY  (SLAC VERSION)      "
 "------------------------------------------------------------------"
 
-PARAMETER $MXCONES=75;     "MAXIMUM NUMBER OF CONES"
-PARAMETER $DELCON=1.0E-04; "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
+REPLACE {$MXCONES} WITH {MXCONES}     "MAXIMUM NUMBER OF CONES"
+REPLACE {$DELCON} WITH {DELCON} "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
 
 "CONDTA---COMMON BLOCK FOR $CONE MACRO"
 REPLACE {;COMIN/CONDTA/;} WITH {
@@ -1838,8 +1838,8 @@ REPLACE {$CON21(#,#,#,#);} WITH {
 "        MACRO-ROUTINE FOR SPHERICAL GEOMETRY  (CERN VERSION)      "
 "------------------------------------------------------------------"
 
-PARAMETER $MXSPHE=75;      "MAX. NO. OF SPHERES"
-PARAMETER $DELSPH=1.0E-04; "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
+REPLACE {$MXSPHE} WITH {MXSPHE}      "MAX. NO. OF SPHERES"
+REPLACE {$DELSPH} WITH {DELSPH} "CLOSEST ALLOWABLE DISTANCE TO SURFACE"
 
 "SPHDTA------COMMON BLOCK FOR $SPHERE MACRO"
 REPLACE {;COMIN/SPHDTA/;} WITH {
@@ -2043,7 +2043,7 @@ REPLACE {$INITIALIZE_PAIR_ANGLE;} WITH {
 "USERS MAY OVERRIDE THIS WITH A HIGHER VALUE BUT A LOWER VALUE WILL   "
 "CAUSE NON-PHYSICAL SAMPLING                                          "
 "                                                                     "
-REPLACE {$BHPAIR} WITH {4.14}
+REPLACE {$BHPAIR} WITH {BHPAIR}
 ;
 "THIS MACRO ENABLES VERY SMALL ANGLE SAMPLING TO BE     "
 "ACCUMULATED. THE LIMIT OF 1.0E-10 BREAKS DOWN AROUND   "
@@ -2241,9 +2241,9 @@ REPLACE {$RE_EVALUATE_DEDX(#);} WITH
 "Macros to denote the various transport algorithms"
 "These numbers just have to be distinct"
 "Note that the distributed version of EGSnrc does not include the VMC option"
-REPLACE {$PRESTA_II} WITH {0}
-REPLACE {$PRESTA__I} WITH {1}
-REPLACE {$VMC}       WITH {2}
+REPLACE {$PRESTA_II} WITH {PRESTA_II}
+REPLACE {$PRESTA__I} WITH {PRESTA__I}
+REPLACE {$VMC} WITH {VMC}
 
 REPLACE {$CALL_USER_ELECTRON} WITH {;}
 
@@ -2251,89 +2251,89 @@ REPLACE {$CALL_USER_ELECTRON} WITH {;}
 REPLACE {$MSCAT_DATAFILE} WITH {i_mscat}
   "Fortran unit number used to read in new MS"
 ;
-REPLACE {$RANDOMIZE_TUSTEP} WITH {.false.}
+REPLACE {$RANDOMIZE_TUSTEP} WITH {RANDOMIZE_TUSTEP}
   "Switches tustep randomization off"
 ;
-REPLACE {$SKIN_DEPTH_FOR_BCA} WITH {3}
+REPLACE {$SKIN_DEPTH_FOR_BCA} WITH {SKIN_DEPTH_FOR_BCA}
 ;
-REPLACE {$PRESTA_DEBUG} WITH {.false.}
+REPLACE {$PRESTA_DEBUG} WITH {PRESTA_DEBUG}
 ;
-REPLACE {$EXACT_BCA_XIMAX} WITH {0.5}
+REPLACE {$EXACT_BCA_XIMAX} WITH {EXACT_BCA_XIMAX}
 ;
-REPLACE {$INEXACT_BCA_XIMAX} WITH {0.5} "this is not realy neccessary, "
+REPLACE {$INEXACT_BCA_XIMAX} WITH {INEXACT_BCA_XIMAX} "this is not realy neccessary, "
                                         "it remained from Alex's coding"
 ;
-REPLACE {$MAX_ELOSS} WITH {0.25}
+REPLACE {$MAX_ELOSS} WITH {MAX_ELOSS}
 ;
-REPLACE {$SUBSTEP_ELOSS_EVALUATION} WITH {.false.}
+REPLACE {$SUBSTEP_ELOSS_EVALUATION} WITH {SUBSTEP_ELOSS_EVALUATION}
 ;
-REPLACE {$MAX_SMAX} WITH {1e10}
+REPLACE {$MAX_SMAX} WITH {MAX_SMAX}
 ;
-REPLACE {$GLOBAL_ECUT} WITH {0.}
+REPLACE {$GLOBAL_ECUT} WITH {GLOBAL_ECUT}
 ;
-REPLACE {$GLOBAL_PCUT} WITH {0.}
+REPLACE {$GLOBAL_PCUT} WITH {GLOBAL_PCUT}
 ;
-REPLACE {$IBRDST_DEFAULT} WITH {1}
+REPLACE {$IBRDST_DEFAULT} WITH {IBRDST_DEFAULT}
 ;
-REPLACE {$IBR_NIST_DEFAULT} WITH {0}
+REPLACE {$IBR_NIST_DEFAULT} WITH {IBR_NIST_DEFAULT}
 ;
-REPLACE {$PAIR_NRC_DEFAULT} WITH {0}
+REPLACE {$PAIR_NRC_DEFAULT} WITH {PAIR_NRC_DEFAULT}
 ;
-REPLACE {$TRIPLET_DEFAULT} WITH {0}
+REPLACE {$TRIPLET_DEFAULT} WITH {TRIPLET_DEFAULT}
 ;
-REPLACE {$IPRDST_DEFAULT} WITH {1}
+REPLACE {$IPRDST_DEFAULT} WITH {IPRDST_DEFAULT}
 ;
-REPLACE {$IBCMP_DEFAULT} WITH {3} "set to norej"
+REPLACE {$IBCMP_DEFAULT} WITH {IBCMP_DEFAULT} "set to norej"
 ;
-REPLACE {$IEDGFL_DEFAULT} WITH {1}
+REPLACE {$IEDGFL_DEFAULT} WITH {IEDGFL_DEFAULT}
 ;
-REPLACE {$IPHTER_DEFAULT} WITH {1}
+REPLACE {$IPHTER_DEFAULT} WITH {IPHTER_DEFAULT}
 ;
 REPLACE {$TRANSPORT_ALGORITHM_DEFAULT} WITH {$PRESTA_II}
 ;
-REPLACE {$BCA_ALGORITHM_DEFAULT} WITH {0}
+REPLACE {$BCA_ALGORITHM_DEFAULT} WITH {BCA_ALGORITHM_DEFAULT}
 ;
-REPLACE {$EXACT_BCA_DEFAULT} WITH {.true.}
+REPLACE {$EXACT_BCA_DEFAULT} WITH {EXACT_BCA_DEFAULT}
 ;
-REPLACE {$SPIN_EFFECTS_DEFAULT} WITH {.true.}
+REPLACE {$SPIN_EFFECTS_DEFAULT} WITH {SPIN_EFFECTS_DEFAULT}
 ;
-REPLACE {$IRAYLR_DEFAULT} WITH {1}
+REPLACE {$IRAYLR_DEFAULT} WITH {IRAYLR_DEFAULT}
 ;
-REPLACE {$AP_DEFAULT} WITH {-1}
+REPLACE {$AP_DEFAULT} WITH {AP_DEFAULT}
 ;
-REPLACE {$UP_DEFAULT} WITH {-1}
+REPLACE {$UP_DEFAULT} WITH {UP_DEFAULT}
 ;
-REPLACE {$XSEC_DEFAULT} WITH {0}
+REPLACE {$XSEC_DEFAULT} WITH {XSEC_DEFAULT}
 ;
 REPLACE {$XDATA_DEFAULT} WITH {'xcom'}
 ;
 REPLACE {$COMP_XDATA_DEFAULT} WITH {'default'}
 ;
 "EADL relaxation is now the default"
-REPLACE {$EADL_RELAX_DEFAULT} WITH {.true.}
+REPLACE {$EADL_RELAX_DEFAULT} WITH {EADL_RELAX_DEFAULT}
 ;
 "Sabbatucci and Salvat PE xsections not the default yet"
-REPLACE {$MCDF_PE_DEFAULT} WITH {.false.}
+REPLACE {$MCDF_PE_DEFAULT} WITH {MCDF_PE_DEFAULT}
 ;
 "Ali:photonuc, 2 lines"
-REPLACE {$IPHOTONUCR_DEFAULT} WITH {0}
+REPLACE {$IPHOTONUCR_DEFAULT} WITH {IPHOTONUCR_DEFAULT}
 ;
 REPLACE {$PHOTONUC_XDATA_DEFAULT} WITH {'default'}
 ;
 "EMH:emf, 7 lines"
-REPLACE {$ExDEF} WITH {0}
+REPLACE {$ExDEF} WITH {ExDEF}
 ;
-REPLACE {$EyDEF} WITH {0}
+REPLACE {$EyDEF} WITH {EyDEF}
 ;
-REPLACE {$EzDEF} WITH {0}
+REPLACE {$EzDEF} WITH {EzDEF}
 ;
-REPLACE {$BxDEF} WITH {0}
+REPLACE {$BxDEF} WITH {BxDEF}
 ;
-REPLACE {$ByDEF} WITH {0}
+REPLACE {$ByDEF} WITH {ByDEF}
 ;
-REPLACE {$BzDEF} WITH {0}
+REPLACE {$BzDEF} WITH {BzDEF}
 ;
-REPLACE {$EMLMTDEF} WITH {0.02}
+REPLACE {$EMLMTDEF} WITH {EMLMTDEF}
 ;
 
             "This macro sets the minimum step size for a condensed"
@@ -2459,13 +2459,13 @@ REPLACE {$PRESTA_INPUTS;}        WITH {;}
 
 ;
 
-REPLACE {$USE_GET_INPUTS} WITH {.true.} "To not use get_input replace this "
+REPLACE {$USE_GET_INPUTS} WITH {USE_GET_INPUTS} "To not use get_input replace this "
                                         "with .false.                      "
 
 "The following are the ones used by default"
 
 
-REPLACE {$USE_GET_INPUTS} WITH {.false.}
+REPLACE {$USE_GET_INPUTS} WITH {USE_GET_INPUTS}
 
 
 ;
@@ -3361,13 +3361,13 @@ REPLACE {$COMPUTE_ELOSS_G(#,#,#,#,#);} WITH
 " explosion (e.g. 8 MB for CAVRZ vs. 0.8 MB without get_inputs()!)           "
 " IK, Dec. 1998                                                              "
 
-REPLACE {$NMAX} WITH {100};
-REPLACE {$NVALUE} WITH {100};
-REPLACE {$STRING80} WITH {80};
-REPLACE {$STRING32} WITH {64};
-REPLACE {$STRING40} WITH {40};
-REPLACE {$STRING256} WITH {256};
-REPLACE {$MXALINP} WITH {5};
+REPLACE {$NMAX} WITH {NMAX};
+REPLACE {$NVALUE} WITH {NVALUE};
+REPLACE {$STRING80} WITH {STRING80};
+REPLACE {$STRING32} WITH {STRING32};
+REPLACE {$STRING40} WITH {STRING40};
+REPLACE {$STRING256} WITH {STRING256};
+REPLACE {$MXALINP} WITH {MXALINP};
 
 REPLACE {COMIN/GetInput/;} WITH
 "        ================"
@@ -3421,8 +3421,8 @@ REPLACE {$AVAILABLE_UNIT(#,#)} WITH {;}
 " If the NRC statistics routine  SIGMA is to be used these must have realistic
 " definitions in the user-code.
 
-REPLACE {$MXDATA} WITH {1};
-REPLACE {$STAT} WITH {2};
+REPLACE {$MXDATA} WITH {MXDATA};
+REPLACE {$STAT} WITH {STAT};
 
 %E  "egsnrc.macros"
 "============================================================================"
@@ -3432,7 +3432,7 @@ REPLACE {$STAT} WITH {2};
 "
 "   It is not an essential part of EGSnrc but is most easily defined here.
 "============================================================================"
-REPLACE{$PLTDIM} WITH {300};"Unique array dimension for XVGRPLOT and PLOTSN"
+REPLACE {$PLTDIM} WITH {PLTDIM};"Unique array dimension for XVGRPLOT and PLOTSN"
                         "Suppresses warnings from Intel compiler on Windows"
                    "when arrays have different dimensions in diff. routines"
 
@@ -3459,7 +3459,7 @@ REPLACE {;COMIN/EGS-VARIANCE-REDUCTION/;} WITH {;
   $SHORT_INT     i_do_rr;
 };
 
-REPLACE {$MAX_RR_WARNING} WITH {50}
+REPLACE {$MAX_RR_WARNING} WITH {MAX_RR_WARNING}
 
 "This macro implements Russian Roulette (most useful  with brems splitting)"
 "It is more efficient than having the user do it via AUSGAB since it avoids"
@@ -3544,7 +3544,7 @@ REPLACE {$COMIN_RADC_SAMPLE;} WITH {
 "*********************************************************************"
 
 "how many chunks do we want to split the parallel run into
-REPLACE {$N_CHUNKS} WITH {10};
+REPLACE {$N_CHUNKS} WITH {N_CHUNKS};
 
 " String manipulations, error messages, etc. "
 REPLACE {$cstring(#)} WITH {{P1}(:lnblnk1({P1}))};
@@ -3575,8 +3575,8 @@ REPLACE {$declare_write_buffer;} WITH {;};
 
 
 " Common block containing various directories, file names, etc. "
-REPLACE {$mx_units} WITH {20};
-REPLACE {$max_extension_length} WITH {10};
+REPLACE {$mx_units} WITH {mx_units};
+REPLACE {$max_extension_length} WITH {max_extension_length};
 REPLACE {;COMIN/EGS-IO/;} WITH {;
   common /egs_io/ file_extensions($mx_units),
                   file_units($mx_units),
@@ -3727,7 +3727,7 @@ REPLACE {$set_ecutmn;} WITH {
 };
 
 " default numer of media. "
-REPLACE {$default_nmed} WITH {1}
+REPLACE {$default_nmed} WITH {default_nmed}
 
 REPLACE {$GET_PEGSLESS_XSECTIONS;} WITH {;
 $egs_fatal('(a/a)',' Code cannot be run in pegsless mode.',
