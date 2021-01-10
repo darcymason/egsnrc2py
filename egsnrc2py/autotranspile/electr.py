@@ -4,6 +4,8 @@ def AUSGAB(IARG):
     pass
 
 
+import numpy as np
+
 !COMMENTS
 !INDENT C5
 !INDENT M4
@@ -26,8 +28,7 @@ def ELECTR(IRCODE):
 if implicit_none:
     implicit_none()
 
-if integer:
-    integer() IRCODE
+IRCODE: np.int32
 
 $COMIN_ELECTR # default replacement produces the following:
                # COMIN/DEBUG,BOUNDS,EGS-VARIANCE-REDUCTION, ELECIN,EPCONT,
@@ -35,16 +36,17 @@ $COMIN_ELECTR # default replacement produces the following:
                         # UPHIOT,USEFUL,USER,RANDOM/
 ;COMIN/EII-DATA/
 ;COMIN/EM/
-if real:
-    real() lambda_max, sigratio, u_tmp, v_tmp, w_tmp
+lambda_max: np.float64
+sigratio: np.float64
+u_tmp: np.float64
+v_tmp: np.float64
+w_tmp: np.float64
 random_tustep: bool
 
 # $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?
 # /******* trying to save evaluation of range.
-if logical:
-    logical()  do_range
-if real:
-    real()     the_range
+do_range: bool
+the_range: np.float64
 # */
 
 # data ierust/0/ # To count negative ustep's

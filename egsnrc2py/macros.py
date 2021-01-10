@@ -30,6 +30,7 @@ class MacrosAndCode:
         # Find all REPLACE ... WITH -> store in self.all_from_to
         self._map_replace_from_to()
 
+        self._replace_var_decl()
         # Classify macros to called, constant, defined_block, other
         #   This uses the macros code and the source code - latter to see
         #   how they are used
@@ -113,6 +114,32 @@ class MacrosAndCode:
                     self.other.append((m_from, m_to))
                 else:
                     self.constant.append((m_from, m_to))
+
+
+    def _replace_var_decl(self):
+        mapping = {
+            "$INTEGER": INTEGER,
+            "$REAL": REAL,
+            "$LOGICAL": LOGICAL,
+            "LOGICAL": LOGICAL,
+        }
+
+        out_lines = ["import numpy as np\n"]
+        for line in self.source_code.splitlines():
+            matched = False
+            for typ in ["$INTEGER", "$REAL", "$LOGICAL", "LOGICAL"]:
+                if line.startswith(typ):
+                    vars = line.replace(typ, "").split(",")
+                    for var in vars:
+                        out_lines.append(
+                            f"{var.strip().replace(';', '')}: {mapping[typ]}"
+                        )
+                    matched = True
+                    break # out of inner loop
+            if not matched:
+                out_lines.append(line)
+
+        self.source_code = "\n".join(out_lines)
 
     def _process_parameters(self):
         """Determine macros with our custom (partial) replacements for "constant"

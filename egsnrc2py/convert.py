@@ -98,31 +98,6 @@ def replace_subs(code: str, subs: dict) -> str:
     return code
 
 
-def replace_var_decl(code: str) -> str:
-    # XXX maybe go to numpy types here, e.g.
-    #    floatvar: np.float32 = np.dtype('float32').type(4.5)
-    mapping = {
-        "$INTEGER": INTEGER,
-        "$REAL": REAL,
-        "$LOGICAL": LOGICAL,
-        "LOGICAL": LOGICAL,
-    }
-
-    out_lines = []
-    for line in code.splitlines():
-        matched = False
-        for typ in ["$INTEGER", "$REAL", "$LOGICAL", "LOGICAL"]:
-            if line.startswith(typ):
-                vars = line.replace(typ, "").split(",")
-                for var in vars:
-                    out_lines.append(f"{var.strip()}: {mapping[typ]}")
-                matched = True
-                break # out of inner loop
-        if not matched:
-            out_lines.append(line)
-
-    return "\n".join(out_lines)
-
 def comment_out_lines(code: str, lines_to_comment: list) -> str:
     all_lines = code.splitlines()
     for i, line in enumerate(all_lines):
@@ -272,7 +247,7 @@ if __name__ == "__main__":
     code = replace_auscall(code)
     # code = add_new_funcs(code)
     code = replace_subs(code, call_subs)
-    code = replace_var_decl(code)
+
     code = comment_out_lines(code, commenting_lines)
     code = replace_particle_vars(code)
     # build_particle_class(AUTO_TRANSPILE_PATH / "particle.py")
