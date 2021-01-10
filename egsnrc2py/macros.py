@@ -16,21 +16,22 @@ logger = logging.getLogger('egsnrc2py')
 
 class MacrosAndCode:
     """Hold macro processing code and ensure called in proper sequence"""
-    max_lines_for_inlining = 15  # max lines in a macro for putting inline
+    max_lines_for_inlining = 10  # max lines in a macro for putting inline
 
     def __init__(self, macros_code, source_code):
         """Parse macros code and classify different types for later use"""
         # First, take dashes out of identifiers
         self.macros_code = self.orig_macros_code = fix_identifiers(macros_code)
         self.source_code = fix_identifiers(source_code)
+        self.imports = []
+        self.callbacks = []
+        self.empty_callbacks = set()
 
         # Change all PARAMETERS x = y macros back to REPLACE..WITH
         self._replace_PARAMETERs()
 
         # Find all REPLACE ... WITH -> store in self.all_from_to
         self._map_replace_from_to()
-
-        self._replace_var_decl()
         # Classify macros to called, constant, defined_block, other
         #   This uses the macros code and the source code - latter to see
         #   how they are used
@@ -39,7 +40,14 @@ class MacrosAndCode:
         # For simple constants and parameters
         #   find, replace with own name without the "$" sign
         self._process_parameters()
+
+        # Replace $LOGICAL, $REAL etc.
+        self._replace_var_decl()
+
+        # Inline functions, check vs None if empty, or large ones go to top
         self._replace_macro_callables()
+
+
 
     def _replace_PARAMETERs(self) -> str:
         """Replace PARAMETER macros with REPLACE..WITH
@@ -124,7 +132,8 @@ class MacrosAndCode:
             "LOGICAL": LOGICAL,
         }
 
-        out_lines = ["import numpy as np\n"]
+        self.imports.append("import numpy as np\n")
+        out_lines = []
         for line in self.source_code.splitlines():
             matched = False
             for typ in ["$INTEGER", "$REAL", "$LOGICAL", "LOGICAL"]:
@@ -213,18 +222,44 @@ class MacrosAndCode:
                 f.write(f"{name}: {_type} = {value}\n")
 
     def macro_replaced_source(self) -> str:
-        return self.source_code
+        imports = "# IMPORTS -------\n" + "\n".join(self.imports)
+        empty_callbacks = "\n# EMPTY CALLBACKS ----\n" + "\n".join(
+            f"{cb} = None"
+            for cb in self.empty_callbacks
+        ) + "\n\n"
+        callbacks = "\n# CALLBACKS ---- \n" + "\n".join(
+            f"def {cb[0]}():\n" + "\n    ".join(cb[1].splitlines())
+            for cb in self.callbacks
+        ) + "\n\n"
+        return imports + empty_callbacks + callbacks + self.source_code
 
     def _replace_macro_callables(self):
         """Macros that are callable replaced with (may be optional) call"""
 
 
-        def replace_fn(match):
+        def replace_empty_fn(match):
             """Make lower-case names"""
             indent = match.group(1)
             func_name = match.group(2).lower()
             args = match.group(3) or ""
             return f"{indent}if {func_name}:\n{indent}    {func_name}({args})"
+
+        def inline_replace_fn(match):
+            indent = match.group(1)
+            lines = [
+                f"{indent}{line.strip().replace(';','')}"
+                for line in repl.splitlines()
+            ]
+            # Visually bracket the replacement with comments
+            pre_comment = f"{indent}# --- Inline replace: {match.group(0).strip()} -----\n"
+            post_comment = f"\n{indent}# " + "-" * len(pre_comment.strip()) + "\n"
+            return pre_comment + "\n".join(lines) + post_comment
+
+        def non_inline_replace_fn(match):
+            indent = match.group(1)
+            func_name = match.group(2).lower()
+            args = match.group(3) or ""
+            return f"{indent}{func_name}({args})"
 
         for macro, repl in self.called:
             # Note, next line assumes `fix_identifiers` has already been run
@@ -233,7 +268,25 @@ class MacrosAndCode:
             # match = re.search(pattern, code, flags=re.MULTILINE)
             # if match:
             #     print(f"Matched {pattern}")
-            self.source_code = re.sub(pattern, replace_fn, self.source_code, flags=re.MULTILINE)
+
+            # XXX need to replace macros with repl too.  Many point to a ; replacement
+            if repl.strip() == ";":  # blank call-back
+                self.source_code = re.sub(
+                    pattern, replace_empty_fn, self.source_code, flags=re.MULTILINE
+                )
+                self.empty_callbacks.add(macro_str.lower())
+            elif len(repl.splitlines()) <= self.max_lines_for_inlining:
+                self.source_code = re.sub(
+                    pattern, inline_replace_fn, self.source_code, flags=re.MULTILINE
+                )
+            else:
+                # Replace to call the function
+                subst = r"\1\2(\3)"
+                self.source_code = re.sub(
+                    pattern, non_inline_replace_fn, self.source_code, flags=re.MULTILINE
+                )
+                self.callbacks.append((macro_str.lower(), repl))
+
 
 
 def test_eval_subst(code):

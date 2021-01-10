@@ -4,12 +4,67 @@ def AUSGAB(IARG):
     pass
 
 
+# IMPORTS -------
 import numpy as np
 
-!COMMENTS
-!INDENT C5
-!INDENT M4
-!INDENT F2
+# EMPTY CALLBACKS ----
+call_user_electron = None
+user_controls_tstep_recursion = None
+add_work_em_field = None
+em_field_ss = None
+set_tustep_em_field = None
+set_ustep_em_field = None
+set_angles_em_field = None
+set_tvstep_em_field = None
+implicit_none = None
+user_range_discard = None
+emfield_initiate_set_tustep = None
+de_fluctuation = None
+emfieldinvacuum = None
+vacuum_add_work_em_field = None
+
+
+# CALLBACKS ---- 
+def set_ustep():
+
+      ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
+                                      # energy dependent quantities
+      $CALCULATE_XI(tustep)
+      if  xi < 0.1 :
+
+          ustep = tustep*(1 - xi*(0.5 - xi*0.166667))
+        else:
+
+          ustep = tustep*(1 - Exp(-xi))/xi
+
+def check_negative_ustep():
+
+        if ustep <= 0:
+
+            # Negative ustep---probable truncation problem at a
+            # boundary, which means we are not in the region we think
+            # we are in.  The default macro assumes that user has set
+            # irnew to the region we are really most likely to be
+            # in.  A message is written out whenever ustep is less than -1.e-4
+            if ustep < -1e-4:
+
+                ierust = ierust + 1
+                OUTPUT ierust,ustep,dedx,e[np]-prm,
+                       ir[np],irnew,irold,x[np],y[np],z[np]
+                (i4,' Negative ustep = ',e12.5,' dedx=',F8.4,' ke=',F8.4,
+                 ' ir,irnew,irold =',3i4,' x,y,z =',4e10.3)
+                if ierust > 1000:
+
+                    OUTPUT;(////' Called exit---too many ustep errors'///)
+                    $CALL_EXIT(1)
+
+
+            ustep = 0
+
+# !COMMENTS
+# !INDENT C5
+# !INDENT M4
+# !INDENT F2
 
 
 # ******************************************************************
@@ -72,8 +127,10 @@ irold = ir[np] # Initialize previous region
 irl    = irold # region number in local variable
 
 
-if start_new_particle:
-    start_new_particle()
+# --- Inline replace: $start_new_particle; -----
+medium = med(irl)
+# ------------------------------------------------
+
 #  Default replacement for the above is medium = med(irl) 
 #  This is made a macro so that it can be replaced with a call to a 
 #  user provided function start_new_particle(); for the C/C++ interface 
@@ -115,8 +172,12 @@ while True:  # :NEWELECTRON: LOOP
 
             # Not vacuum. Must sample to see how far to next interaction.
 
-            if select_electron_mfp:
-                select_electron_mfp()
+            # --- Inline replace: $SELECT_ELECTRON_MFP; -----
+            
+         RNNE1 = randomset() IF(RNNE1.EQ.0.0) [RNNE1=1.E-30]
+            DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
+            # -------------------------------------------------
+
                 #  Default FOR $SELECT_ELECTRON_MFP; is: $RANDOMSET rnne1
                 #                                        demfp = -log(rnne1)
                 # ($RANDOMSET is a macro'ed random number generator)
@@ -166,8 +227,10 @@ while True:  # :NEWELECTRON: LOOP
             else:
 
                 # non-vacuum
-                if set_rhof:
-                    set_rhof()    # density ratio scaling template
+                # --- Inline replace: $SET_RHOF; -----
+                RHOF=RHOR(IRL)/RHO(MEDIUM)
+                # --------------------------------------
+    # density ratio scaling template
                               # EGS allows the density to vary
                               # continuously (user option)
 
@@ -209,8 +272,20 @@ while True:  # :NEWELECTRON: LOOP
                 # Don't replace this macro and don't override range, because
                 # the energy loss evaluation below relies on the accurate
                 # (and self-consistent) evaluation of range!
-                if compute_range:
-                    compute_range()
+                # --- Inline replace: $COMPUTE_RANGE; -----
+                
+                #         ===============
+                if  do_range :
+
+                ekei = E_array(lelke,medium)
+                elkei = (lelke - eke0(medium))/eke1(medium)
+                $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range)
+                the_range = range + range_ep(qel,lelke,medium)
+                do_range = False
+
+                range = the_range/rhof
+                # -------------------------------------------
+
 
                 # The RANDOMIZE-TUSTEP option as coded by AFB forced the
                 # electrons to approach discrete events (Moller,brems etc.)
@@ -231,8 +306,18 @@ while True:  # :NEWELECTRON: LOOP
 
                 $CALL_HOWNEAR(tperp)
                 dnear[np] = tperp
-                if range_discard:
-                    range_discard()       # optional regional range rejection for
+                # --- Inline replace: $RANGE_DISCARD; -----
+                
+                if  i_do_rr(irl) == 1 and e[np] < e_max_rr(irl) :
+
+                if tperp >= range:
+                     [# particle cannot escape local region
+                idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
+                go to :USER-ELECTRON-DISCARD: 
+
+
+                # -------------------------------------------
+       # optional regional range rejection for
                                       # particles below e_max_rr if i_do_rr set
 
                 if user_range_discard:
@@ -378,8 +463,7 @@ while True:  # :NEWELECTRON: LOOP
                         # exact PLC
                         dosingle = False
                         domultiple = True
-                        if set_ustep:
-                            set_ustep()
+                        set_ustep()
 
                     if ustep < tperp:
 
@@ -391,8 +475,7 @@ while True:  # :NEWELECTRON: LOOP
 
             ] # end non-vacuum test
 
-            if set_ustep:
-                set_ustep()_EM_FIELD # additional ustep restriction in em field
+            set_ustep()_EM_FIELD # additional ustep restriction in em field
                                   # default for $SET_USTEP_EM_FIELD; is ;(null)
             irold  = ir[np] # save current region
             irnew  = ir[np] # default new region is current region
@@ -400,8 +483,13 @@ while True:  # :NEWELECTRON: LOOP
             ustep0 = ustep # Save the intended ustep.
 
             # IF(callhowfar) [ call howfar; ]
-            if call_howfar_in_electr:
-                call_howfar_in_electr() # The above is the default replacement
+            # --- Inline replace: $CALL_HOWFAR_IN_ELECTR; -----
+            
+            if callhowfar or wt[np] <= 0:
+            
+                 call howfar 
+            # ---------------------------------------------------
+ # The above is the default replacement
 
             # Now see if user requested discard
             if idisc > 0) # (idisc is returned by howfar:
@@ -409,8 +497,7 @@ while True:  # :NEWELECTRON: LOOP
                 # User requested immediate discard
                 go to :USER-ELECTRON-DISCARD:
 
-            if check_negative_ustep:
-                check_negative_ustep()
+            check_negative_ustep()
 
             if ustep == 0 or medium = 0:
 
@@ -730,8 +817,11 @@ while True:  # :NEWELECTRON: LOOP
     if lelec < 0:
 
         # e-,check branching ratio
-        if evaluate_ebrem_fraction:
-            evaluate_ebrem_fraction()
+        # --- Inline replace: $EVALUATE_EBREM_FRACTION; -----
+        
+        $EVALUATE ebr1 USING ebr1(elke)
+        # -----------------------------------------------------
+
           # Default is $EVALUATE ebr1 USING ebr1(elke)
      rnno24 = randomset()
         if rnno24 <= ebr1:
@@ -764,8 +854,10 @@ while True:  # :NEWELECTRON: LOOP
             # such as splitting, leading particle selection, etc.).
             # (Default macro is template '$PARTICLE_SELECTION_ELECTR'
             # which in turn has the 'null' replacement ';')
-            if particle_selection_moller:
-                particle_selection_moller()
+            # --- Inline replace: $PARTICLE_SELECTION_MOLLER; -----
+            $PARTICLE_SELECTION_ELECTR
+            # -------------------------------------------------------
+
             IARG = MOLLAUSA
             if IAUSFL[IARG + 1] != 0:
                 AUSGAB(IARG)
@@ -775,16 +867,22 @@ while True:  # :NEWELECTRON: LOOP
         go to :NEWELECTRON: # Electron is lowest energy-follow it
 
     # e+ interaction. pbr1 = brems/(brems + bhabha + annih
-    if evaluate_pbrem_fraction:
-        evaluate_pbrem_fraction()
+    # --- Inline replace: $EVALUATE_PBREM_FRACTION; -----
+    
+    $EVALUATE pbr1 USING pbr1(elke)
+    # -----------------------------------------------------
+
        # Default is $EVALUATE pbr1 USING pbr1(elke)
  rnno25 = randomset()
     if rnno25 < pbr1:
         go to :EBREMS: # It was bremsstrahlung
     # Decide between bhabha and annihilation
     # pbr2 is (brems + bhabha)/(brems + bhabha + annih)
-    if evaluate_bhabha_fraction:
-        evaluate_bhabha_fraction()
+    # --- Inline replace: $EVALUATE_BHABHA_FRACTION; -----
+    
+    $EVALUATE pbr2 USING pbr2(elke)
+    # ------------------------------------------------------
+
        # Default is $EVALUATE pbr2 USING pbr2(elke)
     if rnno25 < pbr2:
 
@@ -798,8 +896,11 @@ while True:  # :NEWELECTRON: LOOP
         # such as splitting, leading particle selection, etc.).  (default
         # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
         # has the 'null' replacement ';')
-        if particle_selection_bhabha:
-            particle_selection_bhabha()
+        # --- Inline replace: $PARTICLE_SELECTION_BHABHA; -----
+        
+        $PARTICLE_SELECTION_ELECTR
+        # -------------------------------------------------------
+
         IARG = BHABAUSA
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)
@@ -817,8 +918,11 @@ while True:  # :NEWELECTRON: LOOP
         # such as splitting, leading particle selection, etc.).  (default
         # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
         # has the 'null' replacement ';')
-        if particle_selection_annih:
-            particle_selection_annih()
+        # --- Inline replace: $PARTICLE_SELECTION_ANNIH; -----
+        
+        $PARTICLE_SELECTION_ELECTR
+        # ------------------------------------------------------
+
         IARG = ANNIHFAUSA
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)
@@ -842,8 +946,11 @@ call brems
 # selection scheme (e.g., adding importance sampling such as splitting,
 # leading particle selection, etc.).  (default macro is template
 # '$PARTICLE_SELECTION_ELECTR' which in turn has the 'null' replacement ';')
-if particle_selection_brems:
-    particle_selection_brems()
+# --- Inline replace: $PARTICLE_SELECTION_BREMS; -----
+
+$PARTICLE_SELECTION_ELECTR
+# ------------------------------------------------------
+
 IARG = BREMAUSA
 if IAUSFL[IARG + 1] != 0:
     AUSGAB(IARG)
@@ -874,8 +981,12 @@ else:
     idr = EGSCUTAUS; edep = e[np] - prm; 
 
 
-if electron_track_end:
-    electron_track_end() # The default replacement for this macros is 
+# --- Inline replace: $ELECTRON_TRACK_END; -----
+ IARG = idr
+ if IAUSFL[IARG + 1] != 0:
+     AUSGAB(IARG)
+# ------------------------------------------------
+ # The default replacement for this macros is 
                      #           $AUSCALL(idr)                   
                      # Use this macro if you wish to modify the   
                      # treatment of track ends                    
@@ -891,8 +1002,11 @@ if lelec > 0:
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)
         call annih_at_rest
-        if particle_selection_annih:
-            particle_selection_annih()REST
+        # --- Inline replace: $PARTICLE_SELECTION_ANNIH -----
+        
+        $PARTICLE_SELECTION_ELECTR
+        # -----------------------------------------------------
+REST
         IARG = ANNIHRAUSA
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)

@@ -25,6 +25,10 @@ main_subs = {
     r";(\s*)$": r"\1",      # semi-colon at end of line
     r";(\s*)(?P<comment>#(.*?))?$": r" \g<comment>", # still a semicolon before #
 
+    # Compiler directives
+    r"^%(.*?)$": r"# %\1",  # Any line starting with %
+    r"^!(.*?)$": r"# !\1",  # Any line starting with !
+
     # IF/ELSE
     r"^(\s*)IF\((.*)\)\s*?\[(.*?)[;]?\](.*?)$": r"\1if \2:\n\1    \3\4", # basic IF
     r"^(\s*)(?:]\s*)?ELSE(.*?)?\[(.*)\](.*?)$": r"\1else:\n\1    \3\4", # basic ELSE [ ]
@@ -127,8 +131,6 @@ def transpile_macros(code: str) -> str:
         r";(\s*)$": r"\1",      # semi-colon at end of line
         r";\s*(# .*$)?": r"\1", # '; # comment' -> just comment
 
-        # Compiler directives
-        r"^%(.*?)$": r"# %\1",  # Any line starting with %
 
     }
     for pattern, sub in macro_subs.items():
