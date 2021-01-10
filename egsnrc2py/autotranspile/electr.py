@@ -14,7 +14,6 @@ de_fluctuation = None
 em_field_ss = None
 emfield_initiate_set_tustep = None
 emfieldinvacuum = None
-implicit_none = None
 particle_selection_electr = None
 set_angles_em_field = None
 set_tustep_em_field = None
@@ -26,6 +25,40 @@ vacuum_add_work_em_field = None
 
 
 # CALLBACKS ---- 
+def calculate_tstep_from_demfp():
+
+      if  compute_tstep :
+
+        total_de = demfp/sig; fedep = total_de
+        ekef  = eke - fedep
+        if  ekef <= E_array(1,medium) :
+             tstep = vacdst; 
+        else:
+
+          elkef = Log(ekef)
+          $SET INTERVAL elkef,eke
+          if  lelkef == lelke :
+              
+          [       #  initial and final energy are in the same interpolation bin 
+              $COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep)
+          else:
+          [   #  initial and final energy are in different interpolation bins, 
+              #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke  
+              #  and add the pre-calculated range from E(lelkef+1) to E(lelke) 
+              ekei = E_array(lelke,medium)
+              elkei = (lelke - eke0(medium))/eke1(medium)
+              $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss)
+              ekei = E_array(lelkef+1,medium)
+              elkei = (lelkef + 1 - eke0(medium))/eke1(medium)
+              $COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep)
+              tstep=tstep+tuss+
+                      range_ep(qel,lelke,medium)-range_ep(qel,lelkef+1,medium)
+
+
+        total_tstep = tstep
+        compute_tstep = False
+
+      tstep = total_tstep/rhof #  non-default density scaling 
 def check_negative_ustep():
 
         if ustep <= 0:
@@ -49,6 +82,58 @@ def check_negative_ustep():
 
 
             ustep = 0
+
+def evaluate_sigf():
+
+      if lelec < 0:
+
+          $EVALUATE sigf USING esig(elke)
+          $EVALUATE dedx0 USING ededx(elke)
+          sigf = sigf/dedx0
+      else:
+
+          $EVALUATE sigf USING psig(elke)
+          $EVALUATE dedx0 USING pdedx(elke)
+          sigf = sigf/dedx0
+
+def set_tvstep():
+
+        ;IF ( vstep < ustep0 )
+
+          ekems = eke - 0.5*tustep*vstep/ustep0*dedx
+             # This estimates the energy loss to the boundary.
+             # tustep was the intended curved path-length,
+             # ustep0 is the average transport distance in the initial direction
+             #        resulting from tustep
+             # vstep = ustep is the reduced average transport distance in the 
+             #               initial direction due to boundary crossing
+          $CALCULATE_XI(vstep)
+          if  xi < 0.1 :
+
+            tvstep = vstep*(1 + xi*(0.5 + xi*0.333333))
+          else:
+
+            if  xi < 0.999999 :
+
+               tvstep = -vstep*Log(1 - xi)/xi
+            else:
+
+               # This is an error condition because the average transition 
+               # in the initial direction of motion is always smaller than 1/Q1
+               $egs_info(*,' Stoped in SET-TVSTEP because xi > 1! ')
+               $egs_info(*,' Medium: ',medium)
+               $egs_info(*,' Initial energy: ',eke)
+               $egs_info(*,' Average step energy: ',ekems)
+               $egs_info(*,' tustep: ',tustep)
+               $egs_info(*,' ustep0: ',ustep0)
+               $egs_info(*,' vstep:  ',vstep)
+               $egs_info(*,' ==> xi = ',xi)
+               $egs_fatal(*,'This is a fatal error condition')
+
+
+        else:
+
+          tvstep = tustep
 
 def set_ustep():
 
@@ -81,10 +166,9 @@ def ELECTR(IRCODE):
 #                                      for low energy transport     
 # ******************************************************************
 
-# --- Inline empty replace: ; -----
-if implicit_none:
-    implicit_none()
-# -------------------------------------------------
+# --- Inline replace: ; -----
+implicit none
+# -------------------------------------------
 
 
 IRCODE: np.int32
@@ -135,7 +219,7 @@ irl    = irold # region number in local variable
 
 
 # --- Inline replace: $start_new_particle; -----
-medium = med(irl)
+medium = med(irl) 
 # ------------------------------------------------
 
 #  Default replacement for the above is medium = med(irl) 
@@ -182,7 +266,7 @@ while True:  # :NEWELECTRON: LOOP
             # --- Inline replace: $SELECT_ELECTRON_MFP; -----
             
          RNNE1 = randomset(); IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
-            DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
+             DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
             # -------------------------------------------------
 
                 #  Default FOR $SELECT_ELECTRON_MFP; is: $RANDOMSET rnne1
@@ -194,7 +278,19 @@ while True:  # :NEWELECTRON: LOOP
             # (eke = kinetic energy, rm = rest mass, all in units of MeV)
             $SET INTERVAL elke,eke # Prepare to approximate cross section
 
-            $EVALUATE_SIG0
+            # --- Inline replace: $EVALUATE_SIG0; -----
+            
+               if  sig_ismonotone(qel,medium) :
+
+                   evaluate_sigf() sig0 = sigf
+               else:
+                   if  lelec < 0 :
+                       sig0 = esig_e(medium)
+                   else:
+                       sig0 = psig_e(medium);
+
+            # -------------------------------------------
+
                # The fix up of the fictitious method uses cross section per
                # energy loss. Therefore, demfp/sig is sub-threshold energy loss
                # until the next discrete interaction occures (see below)
@@ -247,7 +343,11 @@ while True:  # :NEWELECTRON: LOOP
                               # EGS allows the density to vary
                               # continuously (user option)
 
-                $SCALE_SIG0
+                # --- Inline replace: $SCALE_SIG0; -----
+                
+                sig = sig0
+                # ----------------------------------------
+
                 if sig <= 0:
 
                     # This can happen if the threshold for brems,
@@ -266,7 +366,7 @@ while True:  # :NEWELECTRON: LOOP
                     sig0 = 1.E-15
                 else:
 
-                    $CALCULATE_TSTEP_FROM_DEMFP
+                    calculate_tstep_from_demfp()
                 ] # end sig if-else
 
                 # calculate stopping power
@@ -288,15 +388,15 @@ while True:  # :NEWELECTRON: LOOP
                 # --- Inline replace: $COMPUTE_RANGE; -----
                 
                 #         ===============
-                if  do_range :
+                  if  do_range :
 
-                ekei = E_array(lelke,medium)
-                elkei = (lelke - eke0(medium))/eke1(medium)
-                $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range)
-                the_range = range + range_ep(qel,lelke,medium)
-                do_range = False
+                      ekei = E_array(lelke,medium)
+                      elkei = (lelke - eke0(medium))/eke1(medium)
+                      $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range)
+                      the_range = range + range_ep(qel,lelke,medium)
+                      do_range = False
 
-                range = the_range/rhof
+                  range = the_range/rhof
                 # -------------------------------------------
 
 
@@ -325,10 +425,10 @@ while True:  # :NEWELECTRON: LOOP
                 # --- Inline replace: $RANGE_DISCARD; -----
                 
                 ;IF( i_do_rr(irl) = 1 and e[np] < e_max_rr(irl) ) [
-                if tperp >= range:
-                     [# particle cannot escape local region
-                idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
-                go to :USER-ELECTRON-DISCARD: 
+                    if tperp >= range:
+                         [# particle cannot escape local region
+                        idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
+                        go to :USER-ELECTRON-DISCARD: 
 
 
                 # -------------------------------------------
@@ -496,7 +596,11 @@ while True:  # :NEWELECTRON: LOOP
 
             ] # end non-vacuum test
 
-            set_ustep()_EM_FIELD # additional ustep restriction in em field
+            # --- Inline empty replace: $SET_USTEP_EM_FIELD; -----
+            if set_ustep_em_field:
+                set_ustep_em_field()
+            # ------------------------------------------------------
+  # additional ustep restriction in em field
                                   # default for $SET_USTEP_EM_FIELD; is ;(null)
             irold  = ir[np] # save current region
             irnew  = ir[np] # default new region is current region
@@ -506,9 +610,9 @@ while True:  # :NEWELECTRON: LOOP
             # IF(callhowfar) [ call howfar; ]
             # --- Inline replace: $CALL_HOWFAR_IN_ELECTR; -----
             
-            if callhowfar or wt[np] <= 0:
+              if callhowfar or wt[np] <= 0:
             
-                 call howfar; 
+                   call howfar; 
             # ---------------------------------------------------
  # The above is the default replacement
 
@@ -613,7 +717,7 @@ while True:  # :NEWELECTRON: LOOP
                     # =>we are doing an approximate CH step
                     # calculate the average curved path-length corresponding
                     # to vstep
-                    $SET_TVSTEP
+                    set_tvstep()
 
                 # Fourth order technique for dedx
                 # Must be done for an approx. CH step or a
@@ -843,9 +947,18 @@ while True:  # :NEWELECTRON: LOOP
 
                 # NRCC update 87/12/08--default is null
 
-            $UPDATE_DEMFP
+            # --- Inline replace: $UPDATE_DEMFP; -----
+            
+            demfp = demfp - save_de*sig
+            total_de = total_de - save_de
+            total_tstep = total_tstep - tvstep*rhof
+            if  total_tstep < 1e-9 :
+                 demfp = 0; 
+            # ------------------------------------------
+
 
         if demfp < EPSEMFP:
+
 
             break  # end ustep loop
 
@@ -853,7 +966,7 @@ while True:  # :NEWELECTRON: LOOP
         # this will take the energy variation of the sigma into
         # account using the fictitious sigma method.
 
-        $EVALUATE_SIGF
+        evaluate_sigf()
 
         sigratio = sigf/sig0
 
@@ -1049,7 +1162,7 @@ else:
 
 
 # --- Inline replace: $ELECTRON_TRACK_END; -----
-; $AUSCALL(idr)
+; $AUSCALL(idr) 
 # ------------------------------------------------
  # The default replacement for this macros is 
                      #           $AUSCALL(idr)                   
@@ -1067,15 +1180,15 @@ if lelec > 0:
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)
         call annih_at_rest
-        # --- Inline replace: $PARTICLE_SELECTION_ANNIH -----
+        # --- Inline replace: $PARTICLE_SELECTION_ANNIHREST; -----
         
         # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
         if particle_selection_electr:
             particle_selection_electr()
         # -------------------------------------------------------------
 
-        # -----------------------------------------------------
-REST
+        # ----------------------------------------------------------
+
         IARG = ANNIHRAUSA
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)

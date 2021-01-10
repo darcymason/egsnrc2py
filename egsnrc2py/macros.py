@@ -34,6 +34,10 @@ class MacrosAndCode:
 
         # Find all REPLACE ... WITH -> store in self.all_from_to
         self._map_replace_from_to()
+
+        # many macros were duplicated. Here, take only the latest one
+        self._map_unique_replace_from_to()
+
         # Classify macros to called, constant, defined_block, other
         #   This uses the macros code and the source code - latter to see
         #   how they are used
@@ -85,7 +89,8 @@ class MacrosAndCode:
         """Goes through the .macros `code` and determines all REPLACE .. WITH"""
         all_from_to = []
         all_di = {}
-        pattern = r"^ *REPLACE\s*\{(.*?)\}\s*?WITH\s*?\{"
+        # Note WITH can be followed by a comment before the opening {
+        pattern = r"^ *REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{"
         i = 0
         re_pattern = re.compile(pattern, re.MULTILINE)
         # subcode = code  # need to update search string to exclude REPLACE in val
@@ -107,6 +112,13 @@ class MacrosAndCode:
 
         self._all_from_to = all_from_to
 
+    def _map_unique_replace_from_to(self):
+        """Use a dict to keep only the latest replacements of duplicated macros"""
+        di = {}
+        for m_from, m_to in self.all_from_to:
+            di[m_from] = m_to
+        self._all_from_to = list(di.items())
+
     def _macro_types(self):
         """Scan through user code (not macro code) to check if macros are
         ever assigned, or called
@@ -127,6 +139,7 @@ class MacrosAndCode:
                 self.defined_block.append((m_from, m_to))
                 continue
             macro_str = escape(m_from)
+            # pattern <indent>[;]$macro then ; or (args);
             alone_pattern = rf'^[ ;]*{macro_str}\s*?(["#].*?$)?;?'
             if re.search(alone_pattern, self.source_code, flags=re.MULTILINE):
                 self.called.append((m_from, m_to))
@@ -252,8 +265,6 @@ class MacrosAndCode:
 
     def _replace_macro_callables(self):
         """Macros that are callable replaced with (may be optional) call"""
-
-
         def replace_empty_fn(match):
             """Make lower-case names"""
             indent = match.group(1)
@@ -267,8 +278,8 @@ class MacrosAndCode:
         def inline_replace_fn(match):
             indent = match.group(1)
             lines = [
-                f"{indent}{line.strip()}"
-                for line in repl.splitlines()
+                f"{indent}{line}"
+                for line in dedent(repl).splitlines()
             ]
             # Visually bracket the replacement with comments
             pre_comment = f"{indent}# --- Inline replace: {match.group(0).strip()} -----\n"
@@ -281,7 +292,9 @@ class MacrosAndCode:
             args = match.group(3) or ""
             return f"{indent}{func_name}({args})"
 
-        for macro, repl in self.called:
+        # Replace macros, but largest first, because can share same start
+        sorted_called = sorted(self.called, key=lambda x:len(x[0]), reverse=True)
+        for macro, repl in sorted_called:
             # Note, next line assumes `fix_identifiers` has already been run
             macro_str = macro.replace("-", "_").replace("$", "").replace(";", "")
             pattern = rf'^( *)\$({macro_str})\s*?(?:\((.*)\))?;?' # \s*(\".*?)$ comment
@@ -391,17 +404,24 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    macros_code = dedent("""REPLACE {$MAXL_MS}    WITH {63}
-        REPLACE {$SELECT-ELECTRON-MFP;} WITH {
-        $RANDOMSET RNNE1; IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
-        DEMFP=MAX(-LOG(RNNE1),$EPSEMFP);}
-        REPLACE {$PARTICLE-SELECTION-PHOTON;} WITH {;}
-        REPLACE {$PARTICLE-SELECTION-COMPT;} WITH {
-                $PARTICLE-SELECTION-PHOTON;}
+    macros_code = dedent("""REPLACE {$EVALUATE-SIG0;} WITH
+        "        ==============="
+        {;
+        IF( sig_ismonotone(qel,medium) ) [
+            $EVALUATE-SIGF; sig0 = sigf;
+        ]
+        ELSE [
+            IF( lelec < 0 ) [sig0 = esig_e(medium);]
+            ELSE            [sig0 = psig_e(medium);]
+        ]
+        }
     """
     )
-    code = dedent("""  $PARTICLE-SELECTION-COMPT;
-        """
+    code = dedent("""$SET INTERVAL elke,eke; "Prepare to approximate cross section
+            $EVALUATE-SIG0;
+               "The fix up of the fictitious method uses cross section per"
+               "energy loss. Therefore, demfp/sig is sub-threshold energy loss"
+            """
     )
 
     # macros_code = "PARAMETER $MXSGE=1;\n    PARAMETER $MXSEKE=1;"
