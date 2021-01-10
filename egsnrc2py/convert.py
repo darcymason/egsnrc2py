@@ -270,7 +270,7 @@ if __name__ == "__main__":
     code = replace_subs(code, main_subs)
     # code = transpile_macros(code)
     code = replace_auscall(code)
-    code = add_new_funcs(code)
+    # code = add_new_funcs(code)
     code = replace_subs(code, call_subs)
     code = replace_var_decl(code)
     code = comment_out_lines(code, commenting_lines)
@@ -280,6 +280,7 @@ if __name__ == "__main__":
     # code = "$AUSCALL($SPHOTONA);"
     # code = replace_macro_callables(code)
     # print(code)
+    print("Writing", out_filename)
     with open(out_filename, "w") as f:
         f.write(code)
 

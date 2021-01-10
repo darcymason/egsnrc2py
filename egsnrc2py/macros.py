@@ -16,9 +16,11 @@ logger = logging.getLogger('egsnrc2py')
 
 class MacrosAndCode:
     """Hold macro processing code and ensure called in proper sequence"""
+    max_lines_for_inlining = 15  # max lines in a macro for putting inline
 
     def __init__(self, macros_code, source_code):
         """Parse macros code and classify different types for later use"""
+        # First, take dashes out of identifiers
         self.macros_code = self.orig_macros_code = fix_identifiers(macros_code)
         self.source_code = fix_identifiers(source_code)
 
@@ -163,7 +165,7 @@ class MacrosAndCode:
                 parameters.append((bare_name, _type, m_to)) # original constant val for params
             # try:
             #     int(m_to)
-            #     egsnrc_macros = re.sub()
+            #     macros_code = re.sub()
             # except TypeError:
             #     try:
             #         float(m_to)
@@ -189,18 +191,22 @@ class MacrosAndCode:
     def _replace_macro_callables(self):
         """Macros that are callable replaced with (may be optional) call"""
 
-        subst = dedent(r"""
-            \1if \2:
-            \1    \2(\3)"""
-        )
+
+        def replace_fn(match):
+            """Make lower-case names"""
+            indent = match.group(1)
+            func_name = match.group(2).lower()
+            args = match.group(3) or ""
+            return f"{indent}if {func_name}:\n{indent}    {func_name}({args})"
+
         for macro, repl in self.called:
             # Note, next line assumes `fix_identifiers` has already been run
-            macro_str = macro.replace("-", "_").replace("$", "")
-            pattern = rf'^( *)\$({macro_str})\s*?(?:\((.*)\))?;' # \s*(\".*?)$ comment
+            macro_str = macro.replace("-", "_").replace("$", "").replace(";", "")
+            pattern = rf'^( *)\$({macro_str})\s*?(?:\((.*)\))?;?' # \s*(\".*?)$ comment
             # match = re.search(pattern, code, flags=re.MULTILINE)
             # if match:
             #     print(f"Matched {pattern}")
-            self.source_code = re.sub(pattern, subst, self.source_code, flags=re.MULTILINE)
+            self.source_code = re.sub(pattern, replace_fn, self.source_code, flags=re.MULTILINE)
 
 
 def test_eval_subst(code):
@@ -283,35 +289,25 @@ if __name__ == "__main__":
         code = f.read()
 
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
-        egsnrc_macros = f.read()
+        macros_code = f.read()
 
-    # egsnrc_macros = dedent("""REPLACE {$MAXL_MS}    WITH {63}
-    #     REPLACE {$MXSGE} WITH {1}
-    #     PARAMETER $MXSGE=5;
-    #     REPLACE {$MAXQ_MS}    WITH {7}
-    #     REPLACE {$MAXU_MS}    WITH {31}
-    #     PARAMETER $MXSEKE=1;
-    #     REPLACE {$0-MAXL_MS}  WITH {0:63}
+    macros_code = dedent("""REPLACE {$MAXL_MS}    WITH {63}
+        REPLACE {$SELECT-ELECTRON-MFP;} WITH {
+        $RANDOMSET RNNE1; IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
+        DEMFP=MAX(-LOG(RNNE1),$EPSEMFP);}
 
-    #     """
-    # )
-    # egsnrc_macros = "PARAMETER $MXSGE=1;\n    PARAMETER $MXSEKE=1;"
+    """
+    )
+    code = dedent("""# Not vacuum. Must sample
+        $SELECT_ELECTRON_MFP;
+        """
+    )
 
-    with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
-        egsnrc_code = f.read()
+    # macros_code = "PARAMETER $MXSGE=1;\n    PARAMETER $MXSEKE=1;"
 
-    filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
+    # with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
+    #     egsnrc_code = f.read()
 
-    # PROCESS ---------------------
-    egsnrc_macros = fix_identifiers(egsnrc_macros)
-
-    # change PARAMETER back to REPLACE..WITH
-    egsnrc_macros = replace_PARAMETER(egsnrc_macros)
-
-    # Replace constants/parameters with their name minus the $ (will be loaded
-    #   in Python by that name)
-    macros_code, parameters = modified_macros(egsnrc_code, egsnrc_macros)
-    write_new_macros_file(filename, macros_code)
-
-    filename = AUTO_TRANSPILE_PATH / "params.py"
-    write_params_file(filename, parameters)
+    macros = MacrosAndCode(macros_code, code)
+    print("Output code")
+    print(macros.macro_replaced_source())
