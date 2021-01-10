@@ -5,8 +5,9 @@ import sys
 from typing import List
 from textwrap import dedent
 
-from .macros import constant_macros, called_macros
-from .config import (
+from egsnrc2py.macros import MacrosAndCode
+
+from egsnrc2py.config import (
     MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH,
     REAL, ENERGY_PRECISION, INTEGER, LOGICAL
 )
@@ -221,13 +222,8 @@ def replace_particle_vars(code: str) -> str:
     for var in vars:
         # XXX note below assumes np not changed in code
         pattern = rf"([^\w]){var}\(np\)"  # e.g. "wt(np)" or "WT(np)"
-        subst = rf"\1{particle_var}.{var}"
+        subst = rf"\1{var}[np]"
         code = re.sub(pattern, subst, code, flags=re.IGNORECASE)
-
-    # Also indicate when particle has been cut:
-    pattern = r"np\s*?=\s*?np\s*?-\s*?1\s*?;"  # np = np - 1;
-    subst = r"p.exists = False"
-    code = re.sub(pattern, subst, code, flags=re.IGNORECASE)
 
     return code
 
@@ -248,36 +244,29 @@ def build_particle_class(filename) -> None:
         f.write(str_out)
 
 
-def replace_macro_callables(code: str) -> str:
-    """Macros that are callable replaced with (may be optional) call"""
-
-    subst = dedent(r"""
-        \1if \2:
-        \1    \2(\3)"""
-    )
-
-    for macro in called_macros:
-        # Note, next line assumes `fix_identifiers` has already been run
-        macro_str = macro.replace("-", "_").replace("$", "")
-        pattern = rf'^( *)\$({macro_str})\s*?(?:\((.*)\))?;' # \s*(\".*?)$ comment
-        # match = re.search(pattern, code, flags=re.MULTILINE)
-        # if match:
-        #     print(f"Matched {pattern}")
-        code = re.sub(pattern, subst, code, flags=re.MULTILINE)
-    return code
-
-
 if __name__ == "__main__":
-    out_filename = AUTO_TRANSPILE_PATH / "electr.py"
 
     # in_filename = MORTRAN_SOURCE_PATH / "egsnrc.macros"
     # out_filename = AUTO_TRANSPILE_PATH / "common.py"
-
     with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
         code = f.read()
+    with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
+        macros_code = f.read()
+    out_filename = AUTO_TRANSPILE_PATH / "electr.py"
 
-    code = fix_identifiers(code)
-    code = replace_macro_callables(code)
+    # MacrosAndCode class pre-processes steps related to macros
+    #  determined "constant" values and makes parameters list we can
+    #  write to a file
+    macros = MacrosAndCode(macros_code, code)
+    mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
+    macros.write_new_macros_file(mod_macros_filename)
+
+    params_py_filename = AUTO_TRANSPILE_PATH / "params.py"
+    macros.write_params_file(params_py_filename)
+
+
+    # Modify the source code according to what we can do with macros
+    code = macros.macro_replaced_source()
     code = replace_subs(code, main_subs)
     # code = transpile_macros(code)
     code = replace_auscall(code)
@@ -286,7 +275,7 @@ if __name__ == "__main__":
     code = replace_var_decl(code)
     code = comment_out_lines(code, commenting_lines)
     code = replace_particle_vars(code)
-    build_particle_class(AUTO_TRANSPILE_PATH / "particle.py")
+    # build_particle_class(AUTO_TRANSPILE_PATH / "particle.py")
 
     # code = "$AUSCALL($SPHOTONA);"
     # code = replace_macro_callables(code)
