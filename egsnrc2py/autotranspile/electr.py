@@ -8,35 +8,24 @@ def AUSGAB(IARG):
 import numpy as np
 
 # EMPTY CALLBACKS ----
-call_user_electron = None
-user_controls_tstep_recursion = None
 add_work_em_field = None
-em_field_ss = None
-set_tustep_em_field = None
-set_ustep_em_field = None
-set_angles_em_field = None
-set_tvstep_em_field = None
-implicit_none = None
-user_range_discard = None
-emfield_initiate_set_tustep = None
+call_user_electron = None
 de_fluctuation = None
+em_field_ss = None
+emfield_initiate_set_tustep = None
 emfieldinvacuum = None
+implicit_none = None
+particle_selection_electr = None
+set_angles_em_field = None
+set_tustep_em_field = None
+set_tvstep_em_field = None
+set_ustep_em_field = None
+user_controls_tstep_recursion = None
+user_range_discard = None
 vacuum_add_work_em_field = None
 
 
 # CALLBACKS ---- 
-def set_ustep():
-
-      ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
-                                      # energy dependent quantities
-      $CALCULATE_XI(tustep)
-      if  xi < 0.1 :
-
-          ustep = tustep*(1 - xi*(0.5 - xi*0.166667))
-        else:
-
-          ustep = tustep*(1 - Exp(-xi))/xi
-
 def check_negative_ustep():
 
         if ustep <= 0:
@@ -61,6 +50,18 @@ def check_negative_ustep():
 
             ustep = 0
 
+def set_ustep():
+
+      ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
+                                      # energy dependent quantities
+      $CALCULATE_XI(tustep)
+      if  xi < 0.1 :
+
+          ustep = tustep*(1 - xi*(0.5 - xi*0.166667))
+        else:
+
+          ustep = tustep*(1 - Exp(-xi))/xi
+
 # !COMMENTS
 # !INDENT C5
 # !INDENT M4
@@ -80,8 +81,11 @@ def ELECTR(IRCODE):
 #                                      for low energy transport     
 # ******************************************************************
 
+# --- Inline empty replace: ; -----
 if implicit_none:
     implicit_none()
+# -------------------------------------------------
+
 
 IRCODE: np.int32
 
@@ -108,8 +112,11 @@ the_range: np.float64
 
 # save ierust
 
+# --- Inline empty replace: $CALL_USER_ELECTRON; -----
 if call_user_electron:
     call_user_electron()
+# ------------------------------------------------------
+
 
 ircode = 1 # Set up normal return-which means there is a photon
             # with less available energy than the lowest energy electron,
@@ -174,7 +181,7 @@ while True:  # :NEWELECTRON: LOOP
 
             # --- Inline replace: $SELECT_ELECTRON_MFP; -----
             
-         RNNE1 = randomset() IF(RNNE1.EQ.0.0) [RNNE1=1.E-30]
+         RNNE1 = randomset(); IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
             DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
             # -------------------------------------------------
 
@@ -206,8 +213,11 @@ while True:  # :NEWELECTRON: LOOP
             if medium == 0:
 
                     # vacuum
+                    # --- Inline empty replace: $EMFIELD_INITIATE_SET_TUSTEP; -----
                     if emfield_initiate_set_tustep:
                         emfield_initiate_set_tustep()
+                    # ---------------------------------------------------------------
+
                     tstep = vacdst; ustep = tstep; tustep = ustep
                     callhowfar = True # Always call HOWFAR for vacuum steps!
 
@@ -221,8 +231,11 @@ while True:  # :NEWELECTRON: LOOP
                     #  The above provide defaults.)
 
                     #  EM field step size restriction in vacuum
+                    # --- Inline empty replace: $SET_TUSTEP_EM_FIELD; -----
                     if set_tustep_em_field:
                         set_tustep_em_field()
+                    # -------------------------------------------------------
+
                     ustep = tustep
             else:
 
@@ -301,15 +314,17 @@ while True:  # :NEWELECTRON: LOOP
                     tmxs = min(tmxs,smaxir(irl))
 
                 tustep = min(tstep,tmxs,range)
+                # --- Inline empty replace: $SET_TUSTEP_EM_FIELD; -----
                 if set_tustep_em_field:
-                    set_tustep_em_field() # optional tustep restriction in EM field
+                    set_tustep_em_field()
+                # -------------------------------------------------------
+ # optional tustep restriction in EM field
 
                 $CALL_HOWNEAR(tperp)
                 dnear[np] = tperp
                 # --- Inline replace: $RANGE_DISCARD; -----
                 
-                if  i_do_rr(irl) == 1 and e[np] < e_max_rr(irl) :
-
+                ;IF( i_do_rr(irl) = 1 and e[np] < e_max_rr(irl) ) [
                 if tperp >= range:
                      [# particle cannot escape local region
                 idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
@@ -320,8 +335,11 @@ while True:  # :NEWELECTRON: LOOP
        # optional regional range rejection for
                                       # particles below e_max_rr if i_do_rr set
 
+                # --- Inline empty replace: $USER_RANGE_DISCARD; -----
                 if user_range_discard:
-                    user_range_discard()  # default is ;, but user may implement
+                    user_range_discard()
+                # ------------------------------------------------------
+  # default is ;, but user may implement
 
                 $SET_SKINDEPTH(eke,elke)
                   # This macro sets the minimum step size for a condensed
@@ -334,8 +352,11 @@ while True:  # :NEWELECTRON: LOOP
                   # decisions about the maximum acceptable approximated CH step
 
                 tustep = min(tustep,max(tperp,skindepth))
+                # --- Inline empty replace: $EMFIELD_INITIATE_SET_TUSTEP; -----
                 if emfield_initiate_set_tustep:
                     emfield_initiate_set_tustep()
+                # ---------------------------------------------------------------
+
                 # The transport logic below is determined by the logical
                 # variables callhhowfar, domultiple and dosingle
                 # 
@@ -487,7 +508,7 @@ while True:  # :NEWELECTRON: LOOP
             
             if callhowfar or wt[np] <= 0:
             
-                 call howfar 
+                 call howfar; 
             # ---------------------------------------------------
  # The above is the default replacement
 
@@ -510,8 +531,11 @@ while True:  # :NEWELECTRON: LOOP
                         # transport in EMF in vacuum:
                         # only a B or and E field can be active
                         # (not both at the same time)
+                        # --- Inline empty replace: $EMFieldInVacuum; -----
                         if emfieldinvacuum:
                             emfieldinvacuum()
+                        # ---------------------------------------------------
+
                     else:
 
                         # Step in vacuum
@@ -520,8 +544,11 @@ while True:  # :NEWELECTRON: LOOP
                         # ( vstep is ustep truncated (possibly) by howfar
                         #  tvstep is the total curved path associated with vstep)
                         edep = pzero # no energy loss in vacuum
+                        # --- Inline empty replace: $VACUUM_ADD_WORK_EM_FIELD; -----
                         if vacuum_add_work_em_field:
                             vacuum_add_work_em_field()
+                        # ------------------------------------------------------------
+
                             # additional vacuum transport in em field
                         e_range = vacdst
                         IARG = TRANAUSB
@@ -535,8 +562,11 @@ while True:  # :NEWELECTRON: LOOP
                             # (dnear is distance to the nearest boundary
                             #  that goes along with particle stack and
                             #  which the user's howfar can supply (option)
+                        # --- Inline empty replace: $SET_ANGLES_EM_FIELD; -----
                         if set_angles_em_field:
                             set_angles_em_field()
+                        # -------------------------------------------------------
+
                             # default for $SET_ANGLES_EM_FIELD; is ; (null)
                              # (allows for EM field deflection
                     ] # end of EM_MACROS_ACTIVE block
@@ -560,8 +590,11 @@ while True:  # :NEWELECTRON: LOOP
             ] # Go try another big step in (possibly) new medium
 
             vstep = ustep
+            # --- Inline empty replace: $EM_FIELD_SS; -----
             if em_field_ss:
                 em_field_ss()
+            # -----------------------------------------------
+
             if callhowfar:
 
                 if exact_bca:
@@ -598,8 +631,11 @@ while True:  # :NEWELECTRON: LOOP
                   $COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de)
 
 
+            # --- Inline empty replace: $SET_TVSTEP_EM_FIELD; -----
             if set_tvstep_em_field:
-                set_tvstep_em_field() # additional path length correction in em field
+                set_tvstep_em_field()
+            # -------------------------------------------------------
+ # additional path length correction in em field
                 # ( Calculates tvstep given vstep
                 #  default for $SET_TVSTEP_EM_FIELD; is ; (null)
 
@@ -611,14 +647,23 @@ while True:  # :NEWELECTRON: LOOP
             # The following macro template allows the user to change the
             # ionization loss.
             # (Provides a user hook for Landau/Vavilov processes)
+            # --- Inline empty replace: $DE_FLUCTUATION; -----
             if de_fluctuation:
                 de_fluctuation()
+            # --------------------------------------------------
+
                 # default for $DE_FLUCTUATION; is ; (null)
             edep = de # energy deposition variable for user
+            # --- Inline empty replace: $ADD_WORK_EM_FIELD; -----
             if add_work_em_field:
-                add_work_em_field()  # e-loss or gain in em field
+                add_work_em_field()
+            # -----------------------------------------------------
+  # e-loss or gain in em field
+            # --- Inline empty replace: $ADD_WORK_EM_FIELD; -----
             if add_work_em_field:
-                add_work_em_field()  # EEMF implementation
+                add_work_em_field()
+            # -----------------------------------------------------
+  # EEMF implementation
                 # Default for $ADD_WORK_EM_FIELD; is ; (null)
             ekef = eke - de # (final kinetic energy)
             eold = eie # save old value
@@ -732,8 +777,11 @@ while True:  # :NEWELECTRON: LOOP
 
             dnear[np] = dnear[np] - vstep
             irold = ir[np] # save previous region
+            # --- Inline empty replace: $SET_ANGLES_EM_FIELD; -----
             if set_angles_em_field:
                 set_angles_em_field()
+            # -------------------------------------------------------
+
             # Default for $SET_ANGLES_EM_FIELD; is ; (null)
 
 
@@ -788,8 +836,11 @@ while True:  # :NEWELECTRON: LOOP
 
                  NEXT :TSTEP:
 
+            # --- Inline empty replace: $USER_CONTROLS_TSTEP_RECURSION; -----
             if user_controls_tstep_recursion:
                 user_controls_tstep_recursion()
+            # -----------------------------------------------------------------
+
                 # NRCC update 87/12/08--default is null
 
             $UPDATE_DEMFP
@@ -855,7 +906,11 @@ while True:  # :NEWELECTRON: LOOP
             # (Default macro is template '$PARTICLE_SELECTION_ELECTR'
             # which in turn has the 'null' replacement ';')
             # --- Inline replace: $PARTICLE_SELECTION_MOLLER; -----
-            $PARTICLE_SELECTION_ELECTR
+            # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
+            if particle_selection_electr:
+                particle_selection_electr()
+            # -------------------------------------------------------------
+
             # -------------------------------------------------------
 
             IARG = MOLLAUSA
@@ -898,7 +953,11 @@ while True:  # :NEWELECTRON: LOOP
         # has the 'null' replacement ';')
         # --- Inline replace: $PARTICLE_SELECTION_BHABHA; -----
         
-        $PARTICLE_SELECTION_ELECTR
+        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
+        if particle_selection_electr:
+            particle_selection_electr()
+        # -------------------------------------------------------------
+
         # -------------------------------------------------------
 
         IARG = BHABAUSA
@@ -920,7 +979,11 @@ while True:  # :NEWELECTRON: LOOP
         # has the 'null' replacement ';')
         # --- Inline replace: $PARTICLE_SELECTION_ANNIH; -----
         
-        $PARTICLE_SELECTION_ELECTR
+        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
+        if particle_selection_electr:
+            particle_selection_electr()
+        # -------------------------------------------------------------
+
         # ------------------------------------------------------
 
         IARG = ANNIHFAUSA
@@ -948,7 +1011,11 @@ call brems
 # '$PARTICLE_SELECTION_ELECTR' which in turn has the 'null' replacement ';')
 # --- Inline replace: $PARTICLE_SELECTION_BREMS; -----
 
-$PARTICLE_SELECTION_ELECTR
+# --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
+if particle_selection_electr:
+    particle_selection_electr()
+# -------------------------------------------------------------
+
 # ------------------------------------------------------
 
 IARG = BREMAUSA
@@ -982,9 +1049,7 @@ else:
 
 
 # --- Inline replace: $ELECTRON_TRACK_END; -----
- IARG = idr
- if IAUSFL[IARG + 1] != 0:
-     AUSGAB(IARG)
+; $AUSCALL(idr)
 # ------------------------------------------------
  # The default replacement for this macros is 
                      #           $AUSCALL(idr)                   
@@ -1004,7 +1069,11 @@ if lelec > 0:
         call annih_at_rest
         # --- Inline replace: $PARTICLE_SELECTION_ANNIH -----
         
-        $PARTICLE_SELECTION_ELECTR
+        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
+        if particle_selection_electr:
+            particle_selection_electr()
+        # -------------------------------------------------------------
+
         # -----------------------------------------------------
 REST
         IARG = ANNIHRAUSA
