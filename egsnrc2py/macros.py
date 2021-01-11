@@ -51,7 +51,10 @@ class MacrosAndCode:
         self._replace_var_decl()
 
         # Inline functions, check vs None if empty, or large ones go to top
+        # Creates self.callbacks_code
         self._replace_macro_callables()
+
+        self._replace_eval_using()  # needs self.callback_code above
 
         # Now recurse so replace any macros that were in previous replacements
         #   but only if this is top level, not already recursed into
@@ -251,17 +254,21 @@ class MacrosAndCode:
             for name, _type, value in self.parameters:
                 f.write(f"{name}: {_type} = {value}\n")
 
+    def _generate_callbacks_code(self):
+        callbacks = "\n# CALLBACKS ---- \n" + "\n".join(
+            f"def {cb[0]}():\n" + "\n    ".join(cb[1].splitlines())
+            for cb in sorted(self.callbacks)
+        ) + "\n\n"
+        self.callbacks_code = callbacks
+
     def macro_replaced_source(self) -> str:
+        """The final source code to write out"""
         imports = "# IMPORTS -------\n" + "\n".join(sorted(self.imports))
         empty_callbacks = "\n# EMPTY CALLBACKS ----\n" + "\n".join(
             f"{cb} = None"
             for cb in sorted(self.empty_callbacks)
         ) + "\n\n"
-        callbacks = "\n# CALLBACKS ---- \n" + "\n".join(
-            f"def {cb[0]}():\n" + "\n    ".join(cb[1].splitlines())
-            for cb in sorted(self.callbacks)
-        ) + "\n\n"
-        return imports + empty_callbacks + callbacks + self.source_code
+        return imports + empty_callbacks + self.callbacks_code + self.source_code
 
     def _replace_macro_callables(self):
         """Macros that are callable replaced with (may be optional) call"""
@@ -319,6 +326,37 @@ class MacrosAndCode:
                     pattern, non_inline_replace_fn, self.source_code, flags=re.MULTILINE
                 )
                 self.callbacks.add((macro_str.lower(), repl))
+        self._generate_callbacks_code()
+
+    def _replace_eval_using(self):
+        """Custom code for common macro"""
+        def repl1arg(match):
+            # $EVALUATE#USING#(#);
+            P1, P2, P3 = match.groups()
+            if P2.lower() == "sin":
+                eval_expr = f"{P1}=sin({P2})"
+            elif P2.lower() in 'sinc blc rthr rthri'.split():
+                eval_expr = f"{P1}={P2}1[L{P3}]*{P3}+{P2}0[L{P3}]"
+            else:
+                eval_expr = f"{P1}={P2}1[L{P3},MEDIUM]*{P3}+{P2}0[L{P3},MEDIUM]"
+            return eval_expr + f"  # EVALUATE{P1}USING{P2}({P3})"  # group 0 caused inf recursion
+
+        eval1arg, _ = re_from_to("$EVALUATE#USING#(#);", "")
+        eval1pattern = re.compile(eval1arg, flags=re.MULTILINE)
+        self.source_code = eval1pattern.sub(repl1arg, self.source_code)
+        self.callbacks_code = eval1pattern.sub(repl1arg, self.callbacks_code)
+        # REPLACE {} WITH {
+        # [IF] '{P2}'=SNAME1
+        # [{P1}={P2}1(L{P3})*{P3}+{P2}0(L{P3});] [ELSE]
+        # [{P1}={P2}1(L{P3},MEDIUM)*{P3}+{P2}0(L{P3},MEDIUM);]}
+
+        # REPLACE {$EVALUATE#USING#(#,#);} WITH {
+        # {P1}={P2}0(L{P3},L{P4})+{P2}1(L{P3},L{P4})*{P3}+
+        # {P2}2(L{P3},L{P4})*
+        # {P4};}"2-D APPROXIMATION INDEPENDENT OF MEDIUM"
+        # SPECIFY SNAME AS ['sinc'|'blc'|'rthr'|'rthri'|'SINC'|'BLC'|'RTHR'|'RTHRI'];
+        # SPECIFY SNAME1 AS ['sin'|'SIN'];
+
 
 
 
@@ -393,6 +431,15 @@ def get_type(m_to):
     return None
 
 
+def re_from_to(m_from, m_to) -> Tuple[str, str]:
+    """Make a particular from->to macro a `re` reg expr search pattern
+
+    E.g. Replace '#' with '.*?' and in "to", {P1} etc with the group match num
+    """
+    re_from = re.escape(m_from).replace(r"\#", "(.*?)")
+    re_to = re.sub(r"\{P(\d*)\}", r"\\\1", m_to)  # {Px} -> \x group replace
+    return re_from, re_to
+
 
 
 if __name__ == "__main__":
@@ -404,7 +451,7 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    macros_code = dedent("""REPLACE {$EVALUATE-SIG0;} WITH
+    xxmacros_code = dedent("""REPLACE {$EVALUATE-SIG0;} WITH
         "        ==============="
         {;
         IF( sig_ismonotone(qel,medium) ) [
@@ -417,10 +464,17 @@ if __name__ == "__main__":
         }
     """
     )
-    code = dedent("""$SET INTERVAL elke,eke; "Prepare to approximate cross section
-            $EVALUATE-SIG0;
-               "The fix up of the fictitious method uses cross section per"
-               "energy loss. Therefore, demfp/sig is sub-threshold energy loss"
+    code = dedent("""      if lelec < 0:
+
+          $EVALUATE sigf USING esig(elke)
+          $EVALUATE dedx0 USING ededx(elke)
+          sigf = sigf/dedx0
+      else:
+
+          $EVALUATE sigf USING psig(elke)
+          $EVALUATE dedx0 USING pdedx(elke)
+          sigf = sigf/dedx0
+
             """
     )
 
