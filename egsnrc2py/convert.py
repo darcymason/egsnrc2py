@@ -222,7 +222,7 @@ def build_particle_class(filename) -> None:
 
 
 if __name__ == "__main__":
-
+    from egsnrc2py.config import EGS_HOME_PATH
     # in_filename = MORTRAN_SOURCE_PATH / "egsnrc.macros"
     # out_filename = AUTO_TRANSPILE_PATH / "common.py"
     with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
@@ -230,6 +230,10 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
     out_filename = AUTO_TRANSPILE_PATH / "electr.py"
+
+    with open(EGS_HOME_PATH / "tutor1" / "tutor1.mortran", 'r') as f:
+        code = f.read()
+    out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
 
     # MacrosAndCode class pre-processes steps related to macros
     #  determined "constant" values and makes parameters list we can
