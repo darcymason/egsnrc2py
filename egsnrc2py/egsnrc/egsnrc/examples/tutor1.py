@@ -48,7 +48,7 @@ def AUSGAB(IARG):
 
 # IMPORTS -------
 import numpy as np
-from egsnrc.import params
+from egsnrc import params
 
 # EMPTY CALLBACKS ----
 
