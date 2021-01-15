@@ -95,6 +95,7 @@ class MacrosAndCode:
                 self.callbacks.update(sub_macros.callbacks)
                 self.empty_callbacks.update(sub_macros.empty_callbacks)
 
+
     def _replace_logging(self):
         """Replace egs_info, egs_warning etc with Python-style logging"""
         for m_from, m_to in logging_replace.items():
