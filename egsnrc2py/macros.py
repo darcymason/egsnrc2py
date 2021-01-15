@@ -14,6 +14,30 @@ import logging
 logger = logging.getLogger('egsnrc2py')
 
 
+warning_line = '***************** Warning: '
+error_line = '***************** Error: '
+quit_line = '***************** Quitting now.'
+
+logging_replace = {
+    '$egs_debug(#,#);': 'logger.debug({P2})',
+    '$egs_info(#,#);': 'logger.info({P2})',
+    '$egs_warning(#,#);': f"logger.warning('{warning_line}'\n{{P2}}",
+    '$egs_fatal(#,#,#);': dedent(
+        f"""logging.critical('{error_line}')\n
+        logging.critical('{{P2}}')\n
+        logging.critical('{quit_line}')\n
+        sys.exit({{P3}})
+        """
+    ),
+    '$egs_fatal(#,#);': dedent(
+        f"""logging.critical('{error_line}')\n
+        logging.critical('{{P2}}')\n
+        logging.critical('{quit_line}')\n
+        sys.exit(1)
+        """
+    ),
+}
+
 class MacrosAndCode:
     """Hold macro processing code and ensure called in proper sequence"""
     max_lines_for_inlining = 10  # max lines in a macro for putting inline
@@ -35,8 +59,8 @@ class MacrosAndCode:
         # Find all REPLACE ... WITH -> store in self.all_from_to
         self._map_replace_from_to()
 
-        # many macros were duplicated. Here, take only the latest one
-        self._map_unique_replace_from_to()
+        # Change error, warning, info, debug macros to Python logging
+        self._replace_logging()
 
         # Classify macros to called, constant, defined_block, other
         #   This uses the macros code and the source code - latter to see
@@ -71,6 +95,14 @@ class MacrosAndCode:
                 self.callbacks.update(sub_macros.callbacks)
                 self.empty_callbacks.update(sub_macros.empty_callbacks)
 
+    def _replace_logging(self):
+        """Replace egs_info, egs_warning etc with Python-style logging"""
+        for m_from, m_to in logging_replace.items():
+            if m_from not in self.all_from_to:
+                logger.error(
+                    f"`logging_replace` macro '{m_from}' not found in list"
+                )
+            self.all_from_to[m_from] = m_to
 
 
     def _replace_PARAMETERs(self) -> str:
@@ -78,6 +110,7 @@ class MacrosAndCode:
 
         This just makes it easier to treat them along with other replaces.
         """
+        logger.info("Replacing PARAMETER macros with REPLACE..WITH")
         pattern = r"^( *)PARAMETER\s*(.*?)\s*?=\s*?(.*?);(.*)$"
         repl_with = r"\1REPLACE {\2} WITH {\3}\4"
         self.macros_code = re.sub(
@@ -88,9 +121,9 @@ class MacrosAndCode:
     def all_from_to(self):
         return self._all_from_to
 
-    def _map_replace_from_to(self):
+    def _map_replace_from_to(self) -> dict:
         """Goes through the .macros `code` and determines all REPLACE .. WITH"""
-        all_from_to = []
+        logger.info("Mapping all macros from->to")
         all_di = {}
         # Note WITH can be followed by a comment before the opening {
         pattern = r"^ *REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{"
@@ -104,25 +137,21 @@ class MacrosAndCode:
             replace_from = match.group(1)
             replace_to = nested_brace_value(self.macros_code, match.end())
             if replace_from in all_di:
+                orig_to = all_di[replace_from]
+                if len(orig_to) < 70 and len(replace_to) < 70:
+                    details =  f" from '{orig_to}' to '{replace_to}'"
+                else:
+                    details = " (definitions too long to print)"
                 logger.warning(
-                    f"Repeat definition of macro '{replace_from}' from "
-                    f"'{all_di[replace_from]}' to {replace_to}"
+                    f"Repeat definition of macro '{replace_from}'{details}"
                 )
-            all_from_to.append((replace_from, replace_to))
             all_di[replace_from] = replace_to
             # print(replace_from, " -> ", replace_to)
             i = match.end() + len(replace_to) + 1  # one extra for }
 
         # Now create regular expression versions of all of the macros
 
-        self._all_from_to = all_from_to
-
-    def _map_unique_replace_from_to(self):
-        """Use a dict to keep only the latest replacements of duplicated macros"""
-        di = {}
-        for m_from, m_to in self.all_from_to:
-            di[m_from] = m_to
-        self._all_from_to = list(di.items())
+        self._all_from_to = all_di
 
     def _macro_types(self):
         """Scan through user code (not macro code) to check if macros are
@@ -139,7 +168,7 @@ class MacrosAndCode:
         self.complex = []
         self.other = []
 
-        for m_from, m_to in self.all_from_to:
+        for m_from, m_to in self.all_from_to.items():
             # See if called - if alone on a line (except comments):
             if "[IF]" in m_to:
                 self.complex.append((m_from, m_to))
@@ -214,7 +243,7 @@ class MacrosAndCode:
         parameters = []
         # sorted_from = sorted(self.all_from_to, key=lambda x: len(x), reverse=True)
         constant_set = set(mac[0] for mac in self.constant)  # faster lookup than a list
-        for m_from, m_to in self.all_from_to:
+        for m_from, m_to in self.all_from_to.items():
             if m_from in constant_set:
                 _type = get_type(m_to)
 
@@ -278,6 +307,9 @@ class MacrosAndCode:
 
     def _replace_macro_callables(self):
         """Macros that are callable replaced with (may be optional) call"""
+
+
+
         def replace_empty_fn(match):
             """Make lower-case names"""
             indent = match.group(1)
@@ -290,14 +322,21 @@ class MacrosAndCode:
 
         def inline_replace_fn(match):
             indent = match.group(1)
-            lines = [
-                f"{indent}{line}"
+            func_name = match.group(2).lower()
+            args = match.group(3) or ""
+
+            # repl is replacement value in outer function
+            lines = [f"\n{indent}else:"] + [
+                f"{indent}    {line}"
                 for line in dedent(repl).splitlines()
             ]
             # Visually bracket the replacement with comments
+            # Still use `if` check against none, so user can replace if desired
+            # the `else:` clause is the "inlined" code
             pre_comment = f"{indent}# --- Inline replace: {match.group(0).strip()} -----\n"
+            fn_check = f"{indent}if {func_name}:\n{indent}    {func_name}({args})"
             post_comment = f"\n{indent}# " + "-" * len(pre_comment.strip()) + "\n"
-            return pre_comment + "\n".join(lines) + post_comment
+            return pre_comment + fn_check + "\n".join(lines) + post_comment
 
         def non_inline_replace_fn(match):
             indent = match.group(1)
@@ -325,6 +364,7 @@ class MacrosAndCode:
                 self.source_code = re.sub(
                     pattern, inline_replace_fn, self.source_code, flags=re.MULTILINE
                 )
+                self.empty_callbacks.add(macro_str.lower())
             else:
                 # Replace to call the function
                 subst = r"\1\2(\3)"
@@ -461,20 +501,25 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    xxmacros_code = dedent("""REPLACE {$EVALUATE-SIG0;} WITH
-        "        ==============="
-        {;
-        IF( sig_ismonotone(qel,medium) ) [
-            $EVALUATE-SIGF; sig0 = sigf;
-        ]
-        ELSE [
-            IF( lelec < 0 ) [sig0 = esig_e(medium);]
-            ELSE            [sig0 = psig_e(medium);]
-        ]
-        }
+    xxmacros_code = dedent(""""how many chunks do we want to split the parallel run into
+        REPLACE {$N_CHUNKS} WITH {10};
+
+        " String manipulations, error messages, etc. "
+        REPLACE {$cstring(#)} WITH {{P1}(:lnblnk1({P1}))};
+        REPLACE {$set_string(#,#);} WITH {;
+        DO i=1,len({P1}) [ {P1}(i:i) = {P2}; ] ;
+        };
+
+        REPLACE {$egs_debug(#,#);} WITH { write(i_log,{P1}) {P2}; };
+        REPLACE {$egs_fatal(#,#,#);} WITH {
+        $warning('(/a)','***************** Error: ');
+        $warning({P1},{P2});
+        $warning('(/a)','***************** Quiting now.');
+        $CALL_EXIT({P3});
+        };
     """
     )
-    code = dedent("""      if lelec < 0:
+    xcode = dedent("""      if lelec < 0:
 
           $EVALUATE sigf USING esig(elke)
           $EVALUATE dedx0 USING ededx(elke)
@@ -493,6 +538,6 @@ if __name__ == "__main__":
     # with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
     #     egsnrc_code = f.read()
 
-    macros = MacrosAndCode(macros_code, code)
-    print("Output code")
-    print(macros.macro_replaced_source())
+    macros = MacrosAndCode(macros_code, code, recurse=False)
+    # print("Output code")
+    # print(macros.macro_replaced_source())

@@ -231,9 +231,9 @@ if __name__ == "__main__":
         macros_code = f.read()
     out_filename = AUTO_TRANSPILE_PATH / "electr.py"
 
-    with open(EGS_HOME_PATH / "tutor1" / "tutor1.mortran", 'r') as f:
-        code = f.read()
-    out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
+    # with open(EGS_HOME_PATH / "tutor1" / "tutor1.mortran", 'r') as f:
+    #     code = f.read()
+    # out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
 
     # MacrosAndCode class pre-processes steps related to macros
     #  determined "constant" values and makes parameters list we can
