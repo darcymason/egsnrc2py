@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 from egsnrc2py.macros import MacrosAndCode, re_from_to, func_details
+from egsnrc2py.macros2 import parse_and_apply_macros
 
 recurse_macro1 = dedent(
     """
@@ -44,3 +45,26 @@ class TestMacroReplace:
         expect_args = "eke1,eke2,lelke1,elke1,elke2".split(",")
         assert expect_args == func_args
         assert ["tuss"] == return_vars
+
+    def test_recursive2(self):
+        macros_code = dedent("""REPLACE {PARAMETER #=#;} WITH
+            { REPLACE {{P1}} WITH {{P2}}}
+
+            PARAMETER $MXXXX=400;     "GAMMA SMALL ENERGY INTERVALS"
+            x = $MXXXX;
+
+            PARAMETER $MXXXX=1;
+            y = $MXXXX;
+            z = $MXSGE;
+            """
+        )
+        macros = {}
+        got = parse_and_apply_macros(macros_code, macros).splitlines()
+        # Check some lines - lots of whitespace left behind after macros removed
+        assert '"GAMMA SMALL ENERGY INTERVALS"' in got[2]
+        assert 'x = 400;' in got[3]
+        assert 'y = 1;' in got[6]
+        assert 'z = $MXSGE;' in got[7]
+        assert 2 == len(macros)
+        assert 'PARAMETER #=#;' in macros
+        assert '$MXXXX' in macros

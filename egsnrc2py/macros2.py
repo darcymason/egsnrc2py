@@ -656,6 +656,6 @@ z = $MXSGE;
     macros = {}
     code = parse_and_apply_macros(macros_code, macros)
     print("Code\n----\n", code)
-    print("# macros:", len(macros))
+    print("# macros:", macros)
     # pprint(macros)
     # pprint(code)
