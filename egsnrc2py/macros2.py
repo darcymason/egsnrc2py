@@ -553,6 +553,85 @@ def func_details(name, args:list) -> Tuple[list, list]:
     return func_args, return_vars
 
 
+# Note WITH can be followed by a comment before the opening {
+replace_with_pattern_str = r"REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{"
+replace_with_pattern = re.compile(replace_with_pattern_str, re.MULTILINE)
+
+
+def parse_and_apply_macros(code: str, macros: dict) -> str:
+    """Parse code, collecting and applying macros in order
+
+    Parameters
+    ----------
+    code: str
+        The macros AND the source code they operate on
+
+    macros: dict
+        List of re-compiled previously parsed macros: replacement pairs
+    """
+
+    def sub_func(match):
+        nonlocal re_with, macros
+        # Act on macros and replaces inside out replacement value
+        expanded = match.expand(re_with)
+        expanded = parse_and_apply_macros(expanded, macros)
+        return expanded
+
+    while True:
+        # Find either a REPLACE...WITH macro
+        # or the first match to existing macros, whichever is first
+
+        rev_macros = sorted(macros, key=lambda x: len(x), reverse=True)
+
+        i_first = 1e9  # stays there if no match
+        repl_match = replace_with_pattern.search(code)
+        if repl_match:
+            i_first = repl_match.start()
+
+        i_match = None
+        for i, m_from in enumerate(rev_macros):
+            compiled_from = macros[m_from][0]
+            match = compiled_from.search(code)
+            if match and match.start() < i_first:
+                i_first = match.start()
+                i_match = i
+
+        # Now see what we found
+        if i_first == 1e9:  # no match, we're done
+            break
+
+        if i_match is not None:  # then found a match to a macro we need to expand
+            logger.debug(f"Found match to {rev_macros[i_match]} at pos {i_first} ")
+            macro_from = rev_macros[i_match]
+            re_replace, re_with = macros[macro_from]
+            code = re_replace.sub(sub_func, code, count=1)
+        else:  # found a REPLACE macro to add to our list
+            logger.debug(f"Found REPLACE macro def'n at pos {i_first} ")
+            match = repl_match
+            m_replace = match.group(1)
+            m_with = nested_brace_value(code, match.end())
+            i_start = match.start()
+            i_end = match.end() + len(m_with) + 1  # one extra for }
+            code = code[:i_start] + code[i_end:]
+            if m_replace in macros:
+                orig_with = macros[m_replace]
+                if len(orig_with) < 70 and len(m_with) < 70:
+                    details =  f" from '{orig_with}' to '{m_with}'"
+                else:
+                    details = " (definitions too long to print)"
+                logger.warning(
+                    f"Repeat definition of macro '{m_replace}'{details}"
+                )
+            re_replace, re_with = re_from_to(m_replace, m_with)
+            macros[m_replace] = (re.compile(re_replace), re_with)
+        # print(m_replace, " -> ", m_with)
+
+    return code
+
+
+
+
+
 if __name__ == "__main__":
 
     in_filename = MORTRAN_SOURCE_PATH / "electr.mortran"
@@ -562,43 +641,21 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    xxmacros_code = dedent(""""how many chunks do we want to split the parallel run into
-        REPLACE {$N_CHUNKS} WITH {10};
+    macros_code = dedent("""REPLACE {PARAMETER #=#;} WITH
+   { REPLACE {{P1}} WITH {{P2}}}
 
-        " String manipulations, error messages, etc. "
-        REPLACE {$cstring(#)} WITH {{P1}(:lnblnk1({P1}))};
-        REPLACE {$set_string(#,#);} WITH {;
-        DO i=1,len({P1}) [ {P1}(i:i) = {P2}; ] ;
-        };
+PARAMETER $MXXXX=400;     "GAMMA SMALL ENERGY INTERVALS"
+x = $MXXXX;
 
-        REPLACE {$egs_debug(#,#);} WITH { write(i_log,{P1}) {P2}; };
-        REPLACE {$egs_fatal(#,#,#);} WITH {
-        $warning('(/a)','***************** Error: ');
-        $warning({P1},{P2});
-        $warning('(/a)','***************** Quiting now.');
-        $CALL_EXIT({P3});
-        };
+PARAMETER $MXXXX=1;
+y = $MXXXX;
+z = $MXSGE;
     """
     )
-    xcode = dedent("""      if lelec < 0:
 
-          $EVALUATE sigf USING esig(elke)
-          $EVALUATE dedx0 USING ededx(elke)
-          sigf = sigf/dedx0
-      else:
-
-          $EVALUATE sigf USING psig(elke)
-          $EVALUATE dedx0 USING pdedx(elke)
-          sigf = sigf/dedx0
-
-            """
-    )
-
-    # macros_code = "PARAMETER $MXSGE=1;\n    PARAMETER $MXSEKE=1;"
-
-    # with open(MORTRAN_SOURCE_PATH / "egsnrc.mortran", 'r') as f:
-    #     egsnrc_code = f.read()
-
-    macros = MacrosAndCode(macros_code, code, recurse=False)
-    # print("Output code")
-    # print(macros.macro_replaced_source())
+    macros = {}
+    code = parse_and_apply_macros(macros_code, macros)
+    print("Code\n----\n", code)
+    print("# macros:", len(macros))
+    # pprint(macros)
+    # pprint(code)

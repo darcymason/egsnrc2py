@@ -5,6 +5,8 @@ def AUSGAB(IARG):
 
 
 # IMPORTS -------
+
+from egsnrc.callbacks import *
 import numpy as np
 
 # EMPTY CALLBACKS ----
@@ -28,7 +30,6 @@ particle_selection_annih = None
 particle_selection_annihrest = None
 particle_selection_bhabha = None
 particle_selection_brems = None
-particle_selection_electr = None
 particle_selection_moller = None
 range_discard = None
 real = None
@@ -47,7 +48,7 @@ vacuum_add_work_em_field = None
 
 
 # CALLBACKS ---- 
-def calculate_tstep_from_demfp():
+def calculate_tstep_from_demfp([]):
 
       if  compute_tstep :
 
@@ -81,7 +82,7 @@ def calculate_tstep_from_demfp():
         compute_tstep = False
 
       tstep = total_tstep/rhof #  non-default density scaling 
-def check_negative_ustep():
+def check_negative_ustep([]):
 
         if ustep <= 0:
 
@@ -105,7 +106,7 @@ def check_negative_ustep():
 
             ustep = 0
 
-def evaluate_sigf():
+def evaluate_sigf([]):
 
       if lelec < 0:
 
@@ -118,7 +119,7 @@ def evaluate_sigf():
            dedx0 = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING pdedx(elke)
           sigf = sigf/dedx0
 
-def set_tvstep():
+def set_tvstep([]):
 
         ;IF ( vstep < ustep0 )
 
@@ -157,7 +158,7 @@ def set_tvstep():
 
           tvstep = tustep
 
-def set_ustep():
+def set_ustep([]):
 
       ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
                                       # energy dependent quantities
@@ -188,12 +189,12 @@ def ELECTR(IRCODE):
 #                                      for low energy transport     
 # ******************************************************************
 
-# --- Inline replace: ; -----
+# --- Inline replace: IMPLICIT_NONE -----
 if implicit_none:
     implicit_none()
 else:
     implicit none
-# -------------------------------------------
+# -----------------------------------------
 
 
 IRCODE: np.int32
@@ -243,12 +244,12 @@ irold = ir[np] # Initialize previous region
 irl    = irold # region number in local variable
 
 
-# --- Inline replace: $start_new_particle; -----
+# --- Inline replace: start_new_particle -----
 if start_new_particle:
     start_new_particle()
 else:
     medium = med(irl) 
-# ------------------------------------------------
+# ----------------------------------------------
 
 #  Default replacement for the above is medium = med(irl) 
 #  This is made a macro so that it can be replaced with a call to a 
@@ -291,14 +292,14 @@ while True:  # :NEWELECTRON: LOOP
 
             # Not vacuum. Must sample to see how far to next interaction.
 
-            # --- Inline replace: $SELECT_ELECTRON_MFP; -----
+            # --- Inline replace: SELECT_ELECTRON_MFP -----
             if select_electron_mfp:
                 select_electron_mfp()
             else:
                 
              RNNE1 = randomset(); IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
                  DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
-            # -------------------------------------------------
+            # -----------------------------------------------
 
                 #  Default FOR $SELECT_ELECTRON_MFP; is: $RANDOMSET rnne1
                 #                                        demfp = -log(rnne1)
@@ -309,13 +310,14 @@ while True:  # :NEWELECTRON: LOOP
             # (eke = kinetic energy, rm = rest mass, all in units of MeV)
             $SET INTERVAL elke,eke # Prepare to approximate cross section
 
-            # --- Inline replace: $EVALUATE_SIG0; -----
+            # --- Inline replace: EVALUATE_SIG0 -----
             if evaluate_sig0:
                 evaluate_sig0()
             else:
                 
                    if  sig_ismonotone(qel,medium) :
 
+                       # --- Replace: EVALUATE_SIGF -----
                        evaluate_sigf() sig0 = sigf
                    else:
                        if  lelec < 0 :
@@ -323,7 +325,7 @@ while True:  # :NEWELECTRON: LOOP
                        else:
                            sig0 = psig_e(medium);
 
-            # -------------------------------------------
+            # -----------------------------------------
 
                # The fix up of the fictitious method uses cross section per
                # energy loss. Therefore, demfp/sig is sub-threshold energy loss
@@ -370,23 +372,23 @@ while True:  # :NEWELECTRON: LOOP
             else:
 
                 # non-vacuum
-                # --- Inline replace: $SET_RHOF; -----
+                # --- Inline replace: SET_RHOF -----
                 if set_rhof:
                     set_rhof()
                 else:
                     RHOF=RHOR(IRL)/RHO(MEDIUM)
-                # --------------------------------------
+                # ------------------------------------
     # density ratio scaling template
                               # EGS allows the density to vary
                               # continuously (user option)
 
-                # --- Inline replace: $SCALE_SIG0; -----
+                # --- Inline replace: SCALE_SIG0 -----
                 if scale_sig0:
                     scale_sig0()
                 else:
                     
                     sig = sig0
-                # ----------------------------------------
+                # --------------------------------------
 
                 if sig <= 0:
 
@@ -406,6 +408,7 @@ while True:  # :NEWELECTRON: LOOP
                     sig0 = 1.E-15
                 else:
 
+                    # --- Replace: CALCULATE_TSTEP_FROM_DEMFP -----
                     calculate_tstep_from_demfp()
                 ] # end sig if-else
 
@@ -425,7 +428,7 @@ while True:  # :NEWELECTRON: LOOP
                 # Don't replace this macro and don't override range, because
                 # the energy loss evaluation below relies on the accurate
                 # (and self-consistent) evaluation of range!
-                # --- Inline replace: $COMPUTE_RANGE; -----
+                # --- Inline replace: COMPUTE_RANGE -----
                 if compute_range:
                     compute_range()
                 else:
@@ -440,7 +443,7 @@ while True:  # :NEWELECTRON: LOOP
                           do_range = False
 
                       range = the_range/rhof
-                # -------------------------------------------
+                # -----------------------------------------
 
 
                 # The RANDOMIZE-TUSTEP option as coded by AFB forced the
@@ -465,7 +468,7 @@ while True:  # :NEWELECTRON: LOOP
 
                 $CALL_HOWNEAR(tperp)
                 dnear[np] = tperp
-                # --- Inline replace: $RANGE_DISCARD; -----
+                # --- Inline replace: RANGE_DISCARD -----
                 if range_discard:
                     range_discard()
                 else:
@@ -477,7 +480,7 @@ while True:  # :NEWELECTRON: LOOP
                             go to :USER-ELECTRON-DISCARD: 
 
 
-                # -------------------------------------------
+                # -----------------------------------------
        # optional regional range rejection for
                                       # particles below e_max_rr if i_do_rr set
 
@@ -630,6 +633,7 @@ while True:  # :NEWELECTRON: LOOP
                         # exact PLC
                         dosingle = False
                         domultiple = True
+                        # --- Replace: SET_USTEP -----
                         set_ustep()
 
                     if ustep < tperp:
@@ -654,7 +658,7 @@ while True:  # :NEWELECTRON: LOOP
             ustep0 = ustep # Save the intended ustep.
 
             # IF(callhowfar) [ call howfar; ]
-            # --- Inline replace: $CALL_HOWFAR_IN_ELECTR; -----
+            # --- Inline replace: CALL_HOWFAR_IN_ELECTR -----
             if call_howfar_in_electr:
                 call_howfar_in_electr()
             else:
@@ -662,7 +666,7 @@ while True:  # :NEWELECTRON: LOOP
                   if callhowfar or wt[np] <= 0:
                 
                        call howfar; 
-            # ---------------------------------------------------
+            # -------------------------------------------------
  # The above is the default replacement
 
             # Now see if user requested discard
@@ -671,6 +675,7 @@ while True:  # :NEWELECTRON: LOOP
                 # User requested immediate discard
                 go to :USER-ELECTRON-DISCARD:
 
+            # --- Replace: CHECK_NEGATIVE_USTEP -----
             check_negative_ustep()
 
             if ustep == 0 or medium = 0:
@@ -766,6 +771,7 @@ while True:  # :NEWELECTRON: LOOP
                     # =>we are doing an approximate CH step
                     # calculate the average curved path-length corresponding
                     # to vstep
+                    # --- Replace: SET_TVSTEP -----
                     set_tvstep()
 
                 # Fourth order technique for dedx
@@ -996,7 +1002,7 @@ while True:  # :NEWELECTRON: LOOP
 
                 # NRCC update 87/12/08--default is null
 
-            # --- Inline replace: $UPDATE_DEMFP; -----
+            # --- Inline replace: UPDATE_DEMFP -----
             if update_demfp:
                 update_demfp()
             else:
@@ -1006,7 +1012,7 @@ while True:  # :NEWELECTRON: LOOP
                 total_tstep = total_tstep - tvstep*rhof
                 if  total_tstep < 1e-9 :
                      demfp = 0; 
-            # ------------------------------------------
+            # ----------------------------------------
 
 
         if demfp < EPSEMFP:
@@ -1018,6 +1024,7 @@ while True:  # :NEWELECTRON: LOOP
         # this will take the energy variation of the sigma into
         # account using the fictitious sigma method.
 
+        # --- Replace: EVALUATE_SIGF -----
         evaluate_sigf()
 
         sigratio = sigf/sig0
@@ -1033,13 +1040,13 @@ while True:  # :NEWELECTRON: LOOP
     if lelec < 0:
 
         # e-,check branching ratio
-        # --- Inline replace: $EVALUATE_EBREM_FRACTION; -----
+        # --- Inline replace: EVALUATE_EBREM_FRACTION -----
         if evaluate_ebrem_fraction:
             evaluate_ebrem_fraction()
         else:
             
              ebr1 = ebr11[Lelke,MEDIUM]*elke+ ebr10[Lelke,MEDIUM]  # EVALUATE ebr1 USING ebr1(elke)
-        # -----------------------------------------------------
+        # ---------------------------------------------------
 
           # Default is  ebr1 = ebr11[Lelke,MEDIUM]*elke+ ebr10[Lelke,MEDIUM]  # EVALUATE ebr1 USING ebr1(elke)
      rnno24 = randomset()
@@ -1073,7 +1080,7 @@ while True:  # :NEWELECTRON: LOOP
             # such as splitting, leading particle selection, etc.).
             # (Default macro is template '$PARTICLE_SELECTION_ELECTR'
             # which in turn has the 'null' replacement ';')
-            # --- Inline replace: $PARTICLE_SELECTION_MOLLER; -----
+            # --- Inline replace: PARTICLE_SELECTION_MOLLER -----
             if particle_selection_moller:
                 particle_selection_moller()
             else:
@@ -1082,7 +1089,7 @@ while True:  # :NEWELECTRON: LOOP
                     particle_selection_electr()
                 # -------------------------------------------------------------
 
-            # -------------------------------------------------------
+            # -----------------------------------------------------
 
             IARG = MOLLAUSA
             if IAUSFL[IARG + 1] != 0:
@@ -1093,13 +1100,13 @@ while True:  # :NEWELECTRON: LOOP
         go to :NEWELECTRON: # Electron is lowest energy-follow it
 
     # e+ interaction. pbr1 = brems/(brems + bhabha + annih
-    # --- Inline replace: $EVALUATE_PBREM_FRACTION; -----
+    # --- Inline replace: EVALUATE_PBREM_FRACTION -----
     if evaluate_pbrem_fraction:
         evaluate_pbrem_fraction()
     else:
         
          pbr1 = pbr11[Lelke,MEDIUM]*elke+ pbr10[Lelke,MEDIUM]  # EVALUATE pbr1 USING pbr1(elke)
-    # -----------------------------------------------------
+    # ---------------------------------------------------
 
        # Default is  pbr1 = pbr11[Lelke,MEDIUM]*elke+ pbr10[Lelke,MEDIUM]  # EVALUATE pbr1 USING pbr1(elke)
  rnno25 = randomset()
@@ -1107,13 +1114,13 @@ while True:  # :NEWELECTRON: LOOP
         go to :EBREMS: # It was bremsstrahlung
     # Decide between bhabha and annihilation
     # pbr2 is (brems + bhabha)/(brems + bhabha + annih)
-    # --- Inline replace: $EVALUATE_BHABHA_FRACTION; -----
+    # --- Inline replace: EVALUATE_BHABHA_FRACTION -----
     if evaluate_bhabha_fraction:
         evaluate_bhabha_fraction()
     else:
         
          pbr2 = pbr21[Lelke,MEDIUM]*elke+ pbr20[Lelke,MEDIUM]  # EVALUATE pbr2 USING pbr2(elke)
-    # ------------------------------------------------------
+    # ----------------------------------------------------
 
        # Default is  pbr2 = pbr21[Lelke,MEDIUM]*elke+ pbr20[Lelke,MEDIUM]  # EVALUATE pbr2 USING pbr2(elke)
     if rnno25 < pbr2:
@@ -1128,7 +1135,7 @@ while True:  # :NEWELECTRON: LOOP
         # such as splitting, leading particle selection, etc.).  (default
         # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
         # has the 'null' replacement ';')
-        # --- Inline replace: $PARTICLE_SELECTION_BHABHA; -----
+        # --- Inline replace: PARTICLE_SELECTION_BHABHA -----
         if particle_selection_bhabha:
             particle_selection_bhabha()
         else:
@@ -1138,7 +1145,7 @@ while True:  # :NEWELECTRON: LOOP
                 particle_selection_electr()
             # -------------------------------------------------------------
 
-        # -------------------------------------------------------
+        # -----------------------------------------------------
 
         IARG = BHABAUSA
         if IAUSFL[IARG + 1] != 0:
@@ -1157,7 +1164,7 @@ while True:  # :NEWELECTRON: LOOP
         # such as splitting, leading particle selection, etc.).  (default
         # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
         # has the 'null' replacement ';')
-        # --- Inline replace: $PARTICLE_SELECTION_ANNIH; -----
+        # --- Inline replace: PARTICLE_SELECTION_ANNIH -----
         if particle_selection_annih:
             particle_selection_annih()
         else:
@@ -1167,7 +1174,7 @@ while True:  # :NEWELECTRON: LOOP
                 particle_selection_electr()
             # -------------------------------------------------------------
 
-        # ------------------------------------------------------
+        # ----------------------------------------------------
 
         IARG = ANNIHFAUSA
         if IAUSFL[IARG + 1] != 0:
@@ -1192,7 +1199,7 @@ call brems
 # selection scheme (e.g., adding importance sampling such as splitting,
 # leading particle selection, etc.).  (default macro is template
 # '$PARTICLE_SELECTION_ELECTR' which in turn has the 'null' replacement ';')
-# --- Inline replace: $PARTICLE_SELECTION_BREMS; -----
+# --- Inline replace: PARTICLE_SELECTION_BREMS -----
 if particle_selection_brems:
     particle_selection_brems()
 else:
@@ -1202,7 +1209,7 @@ else:
         particle_selection_electr()
     # -------------------------------------------------------------
 
-# ------------------------------------------------------
+# ----------------------------------------------------
 
 IARG = BREMAUSA
 if IAUSFL[IARG + 1] != 0:
@@ -1234,12 +1241,12 @@ else:
     idr = EGSCUTAUS; edep = e[np] - prm; 
 
 
-# --- Inline replace: $ELECTRON_TRACK_END; -----
+# --- Inline replace: ELECTRON_TRACK_END -----
 if electron_track_end:
     electron_track_end()
 else:
     ; $AUSCALL(idr) 
-# ------------------------------------------------
+# ----------------------------------------------
  # The default replacement for this macros is 
                      #           $AUSCALL(idr)                   
                      # Use this macro if you wish to modify the   
@@ -1256,7 +1263,7 @@ if lelec > 0:
         if IAUSFL[IARG + 1] != 0:
             AUSGAB(IARG)
         call annih_at_rest
-        # --- Inline replace: $PARTICLE_SELECTION_ANNIHREST; -----
+        # --- Inline replace: PARTICLE_SELECTION_ANNIHREST -----
         if particle_selection_annihrest:
             particle_selection_annihrest()
         else:
@@ -1266,7 +1273,7 @@ if lelec > 0:
                 particle_selection_electr()
             # -------------------------------------------------------------
 
-        # ----------------------------------------------------------
+        # --------------------------------------------------------
 
         IARG = ANNIHRAUSA
         if IAUSFL[IARG + 1] != 0:

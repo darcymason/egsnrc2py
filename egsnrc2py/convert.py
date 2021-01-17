@@ -240,11 +240,12 @@ if __name__ == "__main__":
     #  write to a file
     macros = MacrosAndCode(macros_code, code)
     mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
-    macros.write_new_macros_file(mod_macros_filename)
+
 
     params_py_filename = AUTO_TRANSPILE_PATH / "params.py"
+    callbacks_filename = AUTO_TRANSPILE_PATH / "callbacks.py"
     macros.write_params_file(params_py_filename)
-
+    macros.write_callbacks_file(callbacks_filename)
 
     # Modify the source code according to what we can do with macros
     code = macros.macro_replaced_source()
