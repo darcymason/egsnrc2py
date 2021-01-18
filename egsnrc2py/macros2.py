@@ -14,6 +14,11 @@ import logging
 logger = logging.getLogger('egsnrc2py')
 
 
+NUMBER_TYPES = (INTEGER, REAL, LOGICAL)
+# Macro Types
+FUNCTION, COMMON, PARAMETER, COMPLEX = list(range(4))
+
+
 warning_line = '***************** Warning: '
 error_line = '***************** Error: '
 quit_line = '***************** Quitting now.'
@@ -500,7 +505,7 @@ def generate_macros_py(filename:str, code: str) -> None:
             f.write("]")
 
 
-def get_type(m_to):
+def get_expansion_type(m_to):
     try:
         int(m_to)
         return INTEGER
@@ -553,12 +558,82 @@ def func_details(name, args:list) -> Tuple[list, list]:
     return func_args, return_vars
 
 
+commons = {}
+empty_callbacks = set()
+
+
+def eval_using(match):
+    # $EVALUATE#USING#(#);
+    # Simply use Python f-string replacement to handle the known fixed #s
+    P1, P2, P3 = match.groups()
+    if P2.lower().strip() == "sin":
+        eval_expr = f"{P1}=sin({P2})"
+    elif P2.lower() in 'sinc blc rthr rthri'.split():
+        eval_expr = f"{P1}={P2}1[L{P3}]*{P3}+{P2}0[L{P3}]"
+    else:
+        eval_expr = f"{P1}={P2}1[L{P3},MEDIUM]*{P3}+{P2}0[L{P3},MEDIUM]"
+    return eval_expr + f"  # EVALUATE{P1}USING{P2}({P3})"  # match.group(0) caused inf recursion
+
+
+def expand_function_call(match, macro_from, re_with):
+    # XXX for now, do all as inline
+    # indent = match.group(1)
+    func_name = match.group(1).lower()
+    empty_callbacks.add(func_name)
+    args_list = ", ".join(match.groups()[1:]) if len(match.groups()) > 1 else ""
+    args_str = f"({args_list})"
+    indent = "   "  # XXX need indent later
+
+    repl = match.expand(re_with)
+    fn_check = f"{indent}if {func_name}:\n{indent}    {func_name}{arg_str}"
+    lines = []
+    if repl.strip().replace(";",""):  # non-empty replace
+        lines = [f"\n{indent}else:"] + [
+            f"{indent}    {line}"
+            for line in dedent(repl).splitlines()
+        ]
+
+    # Visually bracket the replacement with comments
+    # Still use `if` check against none, so user can replace if desired
+    # the `else:` clause is the "inlined" code
+    # remove the '$' and ';' if there so doesn't match in recursive replaces
+    match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
+    pre_comment = f"{indent}# --- Inline replace: {match_name} -----\n"
+    post_comment = f"\n{indent}# End inline replace: {match_name} ----\n"
+    return pre_comment + fn_check + "\n".join(lines) + post_comment
+
+
+    post_comment = f"\n{indent}# " + "-" * len(pre_comment.strip()) + "\n"
+
+    return pre_comment + match.expand(re_with) + post_comment
+    # XXX do replace for non-inline
+    # func_args, return_vars = func_details(macro_from)
+
+
+def handle_macro_expansion(macro_from, match, re_with) -> str:
+    if macro_from.startswith(("$COMIN", ";COMIN", "$DEFINE", "$DECLARE")):
+        commons[macro_from] = re_with  # keep in case needed later
+        return "# " + macro_from
+
+    # Logging/warning/error functions
+    if macro_from in logging_replace:
+        return match.expand(logging_replace(macro_from))
+
+    if macro_from.startswith('$EVALUATE#USING'):
+        return eval_using(match)
+
+    # Function calls - any parentheses with an argument are one for sure
+    if re.search(r"\(.*?#.*?\)", macro_from) or macro_from.endswith(";"): # XXX not all that end in ;
+        return expand_function_call(match, macro_from, re_with)
+    return match.expand(re_with)
+
+
 # Note WITH can be followed by a comment before the opening {
 replace_with_pattern_str = r"REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{"
 replace_with_pattern = re.compile(replace_with_pattern_str, re.MULTILINE)
 
 
-def parse_and_apply_macros(code: str, macros: dict) -> str:
+def parse_and_apply_macros(code: str, macros: dict, parameters: dict) -> str:
     """Parse code, collecting and applying macros in order
 
     Parameters
@@ -568,13 +643,24 @@ def parse_and_apply_macros(code: str, macros: dict) -> str:
 
     macros: dict
         List of re-compiled previously parsed macros: replacement pairs
+
+    params: dict
+        List of constants that are replaced with capitalized name,
+        and will be put into a Python parameters file
     """
 
     def sub_func(match):
-        nonlocal re_with, macros
+        nonlocal re_with, macros, parameters, macro_from
         # Act on macros and replaces inside out replacement value
-        expanded = match.expand(re_with)
-        expanded = parse_and_apply_macros(expanded, macros)
+        expansion_type = get_expansion_type(re_with)
+        if expansion_type in NUMBER_TYPES:
+            bare_name = match.group(0).replace("$", "").replace(";", "")  # 'from' name without $ or ;
+            to_ = re_with.replace(".true.", "True").replace(".false.", "False")
+            parameters[bare_name] = (expansion_type, to_)
+            return bare_name  # no need to recurse - know it is a simple #
+        else:
+            expanded = handle_macro_expansion(macro_from, match, re_with)
+        expanded = parse_and_apply_macros(expanded, macros, parameters)
         return expanded
 
     while True:
@@ -627,9 +713,6 @@ def parse_and_apply_macros(code: str, macros: dict) -> str:
         # print(m_replace, " -> ", m_with)
 
     return code
-
-
-
 
 
 if __name__ == "__main__":
