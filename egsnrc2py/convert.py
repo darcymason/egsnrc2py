@@ -5,7 +5,7 @@ import sys
 from typing import List
 from textwrap import dedent
 
-from egsnrc2py.macros import MacrosAndCode
+from egsnrc2py import macros
 
 from egsnrc2py.config import (
     MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH,
@@ -193,9 +193,9 @@ def particle_vars_and_types():
 
 
 def replace_particle_vars(code: str) -> str:
-    """Replace arrays with <var>(np) in Mortran to p.<var> in Python"""
+    """Replace arrays with <var>(np) in Mortran to <var>[np] in Python"""
     vars, _ = particle_vars_and_types()
-    particle_var = "p"
+    # particle_var = "p"
     for var in vars:
         # XXX note below assumes np not changed in code
         pattern = rf"([^\w]){var}\(np\)"  # e.g. "wt(np)" or "WT(np)"
@@ -223,10 +223,9 @@ def build_particle_class(filename) -> None:
 
 if __name__ == "__main__":
     from egsnrc2py.config import EGS_HOME_PATH
-    # in_filename = MORTRAN_SOURCE_PATH / "egsnrc.macros"
-    # out_filename = AUTO_TRANSPILE_PATH / "common.py"
+
     with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
-        code = f.read()
+        egs_code = f.read()
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
     out_filename = AUTO_TRANSPILE_PATH / "electr.py"
@@ -235,34 +234,23 @@ if __name__ == "__main__":
     #     code = f.read()
     # out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
 
-    # MacrosAndCode class pre-processes steps related to macros
-    #  determined "constant" values and makes parameters list we can
-    #  write to a file
-    macros = MacrosAndCode(macros_code, code)
     mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
-
 
     params_py_filename = AUTO_TRANSPILE_PATH / "params.py"
     callbacks_filename = AUTO_TRANSPILE_PATH / "callbacks.py"
-    macros.write_params_file(params_py_filename)
-    macros.write_callbacks_file(callbacks_filename)
+
 
     # Modify the source code according to what we can do with macros
-    code = macros.macro_replaced_source()
-    code = replace_subs(code, main_subs)
-    # code = transpile_macros(code)
-    code = replace_auscall(code)
-    # code = add_new_funcs(code)
-    code = replace_subs(code, call_subs)
+    macros_code, egs_code = macros.apply_macros(macros_code, egs_code)
 
-    code = comment_out_lines(code, commenting_lines)
-    code = replace_particle_vars(code)
-    # build_particle_class(AUTO_TRANSPILE_PATH / "particle.py")
+    egs_code = replace_subs(egs_code, main_subs)
+    egs_code = replace_particle_vars(egs_code)
+    egs_code = replace_subs(egs_code, call_subs)
 
-    # code = "$AUSCALL($SPHOTONA);"
-    # code = replace_macro_callables(code)
-    # print(code)
+    macros.write_parameters_file(params_py_filename)
+    macros.write_callbacks_file(callbacks_filename)
+
     print("Writing", out_filename)
     with open(out_filename, "w") as f:
-        f.write(code)
+        f.write(egs_code)
 

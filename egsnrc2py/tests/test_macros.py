@@ -2,7 +2,7 @@ from textwrap import dedent
 
 from egsnrc2py.macros import re_from_to, func_details
 from egsnrc2py.macros import (
-    parse_and_apply_macros, macros, parameters, empty_callbacks
+    _parse_and_apply_macros, macros, parameters, empty_callbacks
 )
 
 recurse_macro1 = dedent(
@@ -21,7 +21,7 @@ class TestMacroReplace:
         """Macro inside a macro is replaced"""
         macros.clear()
         parameters.clear()
-        code = parse_and_apply_macros(recurse_macro1 + recurse_code1)
+        code = _parse_and_apply_macros(recurse_macro1 + recurse_code1)
         lines = [line for line in code.splitlines() if line.strip().replace(";", "")]
         assert "Inline replace: $ photon_region_change" in lines[0]
         assert "if electron_region_change:" in lines[5]
@@ -33,7 +33,7 @@ class TestMacroReplace:
         empty_callbacks.clear()
         macro_defn = "REPLACE {$CALL_USER_ELECTRON} WITH {;}\n"
         code = "$CALL_USER_ELECTRON"
-        code = parse_and_apply_macros(macro_defn + code)
+        code = _parse_and_apply_macros(macro_defn + code)
         lines = [line for line in code.splitlines() if line.strip().replace(";", "")]
         assert 4 == len(lines)
         assert "if call_user_electron:" in lines[1]  # after comment line
@@ -77,7 +77,7 @@ class TestMacroReplace:
         )
         macros.clear()
         parameters.clear()
-        got = parse_and_apply_macros(macros_code).splitlines()
+        got = _parse_and_apply_macros(macros_code).splitlines()
         # Check some lines - lots of whitespace left behind after macros removed
         assert '"GAMMA SMALL ENERGY INTERVALS"' in got[2]
         assert 'x = YYY;' in got[3]

@@ -10,11 +10,13 @@ from egsnrc2py.config import (
 )
 
 import logging
+from pathlib import Path
 
 logger = logging.getLogger('egsnrc2py')
 
 
 commons = {}
+callbacks = set()
 empty_callbacks = set()
 imports = set()
 macros = {}
@@ -61,32 +63,44 @@ func_signatures = {
 
 }
 
-def write_params_file(self, filename) -> None:
+
+# Macros to leave alone or deal with in special functions
+# Set value to None if meant to ignore - match will be put in a Python comment
+complex_macros = {
+    '$DUMP#,#;': None
+}
+
+def write_parameters_file(filename) -> None:
     with open(filename, "w") as f:
         f.write("import numpy as np\n\n")
-        for name, _type, value in parameters:
+        for name, (_type, value) in parameters.items():
             f.write(f"{name}: {_type} = {value}\n")
 
-    def write_callbacks_file(self, filename) -> None:
-        with open(filename, "w") as f:
-            f.write(self.callbacks_code)
+def write_callbacks_file(filename) -> None:
+    with open(filename, "w") as f:
+        f.write(_generate_callbacks_code(filename))
 
-def _generate_callbacks_code():
+def _generate_callbacks_code(filename: str):
     cb_list = []
+    callbacks_str = ""
     for name, args, repl in sorted(callbacks):
         func_args, return_vars = func_details(name, args)
         cb_list.append(
             f"def {name}({func_args}):\n" + "\n    ".join(repl.splitlines())
         )
-    callbacks = "\n# CALLBACKS ---- \n" + "\n".join(cb_list) + "\n\n"
 
-    empty_callbacks = "\n# EMPTY CALLBACKS ----\n" + "\n".join(
+    if cb_list:
+        callbacks_str = "\n# CALLBACKS ---- \n" + "\n".join(cb_list) + "\n\n"
+
+    empty_callbacks_str = "\n# EMPTY CALLBACKS ----\n" + "\n".join(
         f"{cb} = None"
         for cb in sorted(empty_callbacks)
     ) + "\n\n"
 
-    self.callbacks_code = empty_callbacks + callbacks
-    imports.add("\nfrom egsnrc.callbacks import *")
+    module_name = str(Path(filename).stem)
+    imports.add(f"\nfrom egsnrc.{module_name} import *")
+
+    return empty_callbacks_str + callbacks_str
 
 
 def get_expansion_type(m_to):
@@ -160,6 +174,7 @@ def expand_function_call(match, macro_from, re_replace, re_with):
     # indent = match.group(1)
     func_match = re.search(r"(?:\$)?([\w_]+);?(\(.*?#.*?\))?;?", macro_from)
     func_name = func_match.group(1).lower()
+    logger.debug(f"Handling function '{func_name}'")
     empty_callbacks.add(func_name)
     args_list = ", ".join(match.groups()) if match else ""
     args_str = f"({args_list})"
@@ -194,14 +209,30 @@ def expand_function_call(match, macro_from, re_replace, re_with):
 def handle_macro_expansion(macro_from, match, re_replace, re_with) -> str:
     if macro_from.startswith(("$COMIN", ";COMIN", "$DEFINE", "$DECLARE")):
         commons[macro_from] = re_with  # keep in case needed later
-        return "# " + macro_from
+        # Mangle the name a little so don't replace it in the comment
+        # Mangle the name a little so don't replace it in the comment
+        return "# " + macro_from.replace("$", "$ ").capitalize()
 
     # Logging/warning/error functions
     if macro_from in logging_replace:
-        return match.expand(logging_replace(macro_from))
+        return match.expand(logging_replace[macro_from])
 
     if macro_from.startswith('$EVALUATE#USING'):
         return eval_using(match)
+
+    if macro_from in complex_macros:
+        handler = complex_macros[macro_from]
+        if handler:
+            raise NotImplementedError("Need to implement complex macro handlers")
+        return f"# Unhandled macro '{match.group(0).replace('$', '$ ')}'" # add space after $ to not replace again
+
+    if "[IF]" in re_with or "{EMIT }" in re_with:
+        # is a "complex macro" - we leave alone for now
+        msg = (
+            f"# Complex macro {macro_from} - not replacing "
+            "within its replacement"
+        )
+        return msg + match.expand(re_with)
 
     # Function calls - any parentheses with an argument are one for sure
     if (
@@ -210,18 +241,21 @@ def handle_macro_expansion(macro_from, match, re_replace, re_with) -> str:
         or macro_from.lower().startswith("$call_")
     ): # XXX not all that end in ; are calls
         expansion = match.expand(re_with)
-        expansion = parse_and_apply_macros(expansion)
+        expansion = _parse_and_apply_macros(expansion)
         if "call " in expansion or " = " in expansion or macro_from.lower().startswith("$call_"):
             return expand_function_call(match, macro_from, re_replace, re_with)
     return match.expand(re_with)
 
 
-# Note WITH can be followed by a comment before the opening {
-replace_with_pattern_str = r"REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{"
+# Note WITH can be followed by a comment before the opening
+# Use engaive look-behind (?<!") to not take a replace immediately after
+#  a comment marker ("). Note if a closed comment before the replace,
+#  we will miss that one.
+replace_with_pattern_str = r'(?<!")REPLACE\s*\{(.*?)\}\s*?WITH\s*?(\".*?\"\s*)?\{'
 replace_with_pattern = re.compile(replace_with_pattern_str, re.MULTILINE)
 
 
-def parse_and_apply_macros(code: str) -> str:
+def _parse_and_apply_macros(code: str) -> str:
     """Parse code, collecting and applying macros in order
 
     Parameters
@@ -251,18 +285,18 @@ def parse_and_apply_macros(code: str) -> str:
             parameters[bare_name] = (expansion_type, to_)
             return bare_name  # no need to recurse - know it is a simple #
         else:
-            expand1 = handle_macro_expansion(macro_from, match, re_replace, re_with)
-        expanded = parse_and_apply_macros(expand1)
-        return expanded
+            return handle_macro_expansion(macro_from, match, re_replace, re_with)
 
+    i_first = 0
     while True:
         # Find either a REPLACE...WITH macro
         # or the first match to existing macros, whichever is first
 
         rev_macros = sorted(macros, key=lambda x: len(x), reverse=True)
 
+        i_last = i_first  # i_last will be start of last thing we replaced
         i_first = 1e9  # stays there if no match
-        repl_match = replace_with_pattern.search(code)
+        repl_match = replace_with_pattern.search(code, pos=i_last)
         if repl_match:
             i_first = repl_match.start()
 
@@ -284,15 +318,15 @@ def parse_and_apply_macros(code: str) -> str:
             re_replace, re_with = macros[macro_from]
             code = re_replace.sub(sub_func, code, count=1)
         else:  # found a REPLACE macro to add to our list
-            logger.debug(f"Found REPLACE macro def'n at pos {i_first} ")
             match = repl_match
             m_replace = match.group(1)
+            logger.info(f"Found REPLACE macro '{m_replace}' at pos {i_first} ")
             m_with = nested_brace_value(code, match.end())
             i_start = match.start()
             i_end = match.end() + len(m_with) + 1  # one extra for }
             code = code[:i_start] + code[i_end:]
             if m_replace in macros:
-                orig_with = macros[m_replace]
+                orig_with = macros[m_replace][1]
                 if len(orig_with) < 70 and len(m_with) < 70:
                     details =  f" from '{orig_with}' to '{m_with}'"
                 else:
@@ -306,6 +340,16 @@ def parse_and_apply_macros(code: str) -> str:
 
     return code
 
+
+def apply_macros(macros_code, egs_code):
+    # First process macros file; macros will stay in global variable
+    macros_code = fix_identifiers(macros_code)
+    macros_code = _parse_and_apply_macros(macros_code)
+
+    egs_code = fix_identifiers(egs_code)
+    egs_code = _parse_and_apply_macros(egs_code)
+
+    return macros_code, egs_code
 
 if __name__ == "__main__":
 
@@ -328,7 +372,7 @@ if __name__ == "__main__":
     )
 
     macros = {}
-    code = parse_and_apply_macros(macros_code)
+    code = _parse_and_apply_macros(macros_code)
     print("Code\n----\n", code)
     print("# macros:", macros)
     # pprint(macros)
