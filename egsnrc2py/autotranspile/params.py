@@ -1,9 +1,5 @@
 import numpy as np
 
-MXVRT1: np.int32 = 1000
-MXAUS: np.int32 = 35
-MXSHELL: np.int32 = 6
-BHPAIR: np.float64 = 4.14
 EPSEMFP: np.float64 = 1.E-8
 RANDOMIZE_TUSTEP: bool = False
 PRESTA_II: np.int32 = 0

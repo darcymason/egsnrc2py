@@ -59,7 +59,8 @@ func_signatures = {
     # $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range)
     # $COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep)
     # $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss)
-    'compute_drange': ("eke1,eke2,lelke1,elke1,elke2".split(","), (5,))
+    'compute_drange': ("eke1,eke2,lelke1,elke1,elke2".split(","), (5,)),
+    'randomset': ([], (0,)),  # the one argument is output only
 
 }
 
@@ -69,6 +70,7 @@ func_signatures = {
 complex_macros = {
     '$DUMP#,#;': None,
     '$IMPLICIT_NONE': None,
+    '$SET INTERVAL#,#;': None,  # is SET INTERVAL#,SINC in .macros, but nothing in Fortran
 }
 
 def write_parameters_file(filename) -> None:
@@ -153,7 +155,7 @@ def func_details(name, args:list) -> Tuple[list, list]:
     if bare_name in func_signatures:
         func_args, func_outputs = func_signatures[bare_name]
         return_vars = [
-            args[out] if isinstance(out, int) else out
+            args[out].strip() if isinstance(out, int) else out
             for out in func_outputs
         ]
     else:
@@ -185,17 +187,20 @@ def add_indent(text, match):
     return textwrap.indent(text, match.group("indent"))
 
 def bracket_function_call(match, macro_from, expansion):
-    pre_comment = match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
+    match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
     pre_comment = f"# --- Inline replace: {match_name} -----\n"
     post_comment = f"\n# End inline replace: {match_name} ----"
     func_match = re.search(r"(?:\$)?([\w_]+);?(\(.*?#.*?\))?;?", macro_from)
     func_name = func_match.group(1).lower()
-    args_list = ", ".join(match.groups()[1:]) if match else ""  # '1:' because indent is first
-    args_str = f"({args_list})"
 
+    args = [x.strip() for x in match.groups()[1:]]
+
+    func_args, return_vars = func_details(func_name, args)
+    args_str = f"({', '.join(func_args)})"
     logger.debug(f"Handling function '{func_name}'")
     empty_callbacks.add(func_name)
-    fn_check = f"if {func_name}:\n    {func_name}{args_str}"
+    return_str = f"{', '.join(return_vars)} = " if return_vars else ""
+    fn_check = f"if {func_name}:\n    {return_str}{func_name}{args_str}"
     lines = []
     if expansion.strip().replace(";",""):  # non-empty replace
         lines = [f"\nelse:"] + [
@@ -203,42 +208,6 @@ def bracket_function_call(match, macro_from, expansion):
             for line in expansion.splitlines()
         ]
     return pre_comment + fn_check + "\n".join(lines) + post_comment
-
-
-def expand_function_call(match, macro_from, re_replace, re_with):
-    # XXX for now, do all as inline
-    indent = match.group("indent")
-    func_match = re.search(r"(?:\$)?([\w_]+);?(\(.*?#.*?\))?;?", macro_from)
-    func_name = func_match.group(1).lower()
-    logger.debug(f"Handling function '{func_name}'")
-    empty_callbacks.add(func_name)
-    args_list = ", ".join(match.groups()[1:]) if match else ""  # 1: because indent is first
-    args_str = f"({args_list})"
-
-    repl = match.expand(re_with)
-    fn_check = f"if {func_name}:\n    {func_name}{args_str}"
-    lines = []
-    if repl.strip().replace(";",""):  # non-empty replace
-        lines = [f"\nelse:"] + [
-            f"    {line}"
-            for line in textwrap.dedent(repl).splitlines()
-        ]
-
-    # Visually bracket the replacement with comments
-    # Still use `if` check against none, so user can replace if desired
-    # the `else:` clause is the "inlined" code
-    # remove the '$' and ';' if there so doesn't match in recursive replaces
-    match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
-    pre_comment = f"# --- Inline replace: {match_name} -----\n"
-    post_comment = f"\n# End inline replace: {match_name} ----\n"
-
-    # XXX do replace for non-inline
-    # func_args, return_vars = func_details(macro_from)
-
-    return add_indent(
-        pre_comment + fn_check + "\n".join(lines) + post_comment, match
-    )
-
 
 
 def handle_macro_expansion(
@@ -263,7 +232,11 @@ def handle_macro_expansion(
         handler = complex_macros[macro_from]
         if handler:
             raise NotImplementedError("Need to implement complex macro handlers")
-        return f"# Unhandled macro '{match.group(0).replace('$', '$ ')}'" # add space after $ to not replace again
+        return add_indent(
+            # add space after $ to not replace again
+            f"# Unhandled macro '{textwrap.dedent(match.group(0).replace('$', '$ '))}'",
+            match
+        )
 
     if "[IF]" in re_with or "{EMIT }" in re_with:
         # is a "complex macro" - we leave alone for now
@@ -286,7 +259,10 @@ def handle_macro_expansion(
     ): # XXX not all that end in ; are calls
 
         if "call " in expansion or " = " in expansion or macro_from.lower().startswith("$call_"):
-            return bracket_function_call(match, macro_from, expansion)
+            return add_indent(
+                bracket_function_call(match, macro_from, expansion),
+                match
+            )
         else:
             return expansion
     return add_indent(expansion, match)
@@ -373,7 +349,7 @@ def _parse_and_apply_macros(code: str) -> str:
         else:  # found a REPLACE macro to add to our list
             match = repl_match
             m_replace = match.group(1)
-            logger.info(f"Found REPLACE macro '{m_replace}' at pos {i_first} ")
+            logger.debug(f"Found REPLACE macro '{m_replace}' at pos {i_first} ")
             m_with = nested_brace_value(code, match.end())
             i_start = match.start()
             i_end = match.end() + len(m_with) + 1  # one extra for }
@@ -394,10 +370,23 @@ def _parse_and_apply_macros(code: str) -> str:
     return code
 
 
-def apply_macros(macros_code, egs_code):
-    # First process macros file; macros will stay in global variable
+def init_macros():
     macros.clear()
     parameters.clear()
+    callbacks.clear()
+    empty_callbacks.clear()
+    imports.clear()
+
+    # $SET INTERVAL defined without space in egsnrc.macros, here add to
+    #   be able to comment those lines out
+    m_from = r'$SET INTERVAL#,#;'
+    re_from, _ = re_from_to(m_from, "")
+    macros[m_from] = (re.compile(re_from), r"# $ SET INTERVAL \g<2>,\g<3>")
+
+
+def apply_macros(macros_code, egs_code):
+    # First process macros file; macros will stay in global variable
+    init_macros()
 
     logger.info("Fixing identifiers (no dash or leading numbers)")
     macros_code = fix_identifiers(macros_code)

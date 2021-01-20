@@ -79,6 +79,10 @@ call_subs= {
     r"   \$RANDOMSET (\w*)": r"\1 = randomset()",
 }
 
+# Replace variable names that are Python keywords
+keyword_subs = {
+    r'\blambda\b': r"lambda_",
+}
 
 def add_new_funcs(code: str) -> str:
     fakes = [
@@ -228,13 +232,16 @@ if __name__ == "__main__":
         egs_code = f.read()
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
+    with open(MORTRAN_SOURCE_PATH / "ranlux.macros", 'r') as f:
+        random_macros = f.read()
+
     out_filename = AUTO_TRANSPILE_PATH / "electr.py"
 
     # with open(EGS_HOME_PATH / "tutor1" / "tutor1.mortran", 'r') as f:
     #     code = f.read()
     # out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
 
-    mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
+    # mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
 
     params_py_filename = AUTO_TRANSPILE_PATH / "params.py"
     callbacks_filename = AUTO_TRANSPILE_PATH / "callbacks.py"
@@ -247,12 +254,14 @@ if __name__ == "__main__":
     #p = pstats.Stats('macro_parse_stats')
     # p.strip_dirs().sort_stats("cumulative").print_stats(15)
 
+    macros_code = random_macros + macros_code
     macros_code, egs_code = macros.apply_macros(macros_code, egs_code)
     print(f"Found {len(macros.macros)} macros")
 
     egs_code = replace_subs(egs_code, main_subs)
     egs_code = replace_particle_vars(egs_code)
     egs_code = replace_subs(egs_code, call_subs)
+    egs_code = replace_subs(egs_code, keyword_subs)
 
     macros.write_parameters_file(params_py_filename)
     macros.write_callbacks_file(callbacks_filename)

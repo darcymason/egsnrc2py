@@ -2,8 +2,10 @@ from textwrap import dedent
 
 from egsnrc2py.macros import re_from_to, func_details
 from egsnrc2py.macros import (
-    _parse_and_apply_macros, macros, parameters, empty_callbacks
+    _parse_and_apply_macros, macros, parameters, empty_callbacks, init_macros,
+    apply_macros
 )
+from egsnrc2py.util import fix_identifiers
 
 recurse_macro1 = dedent(
     """
@@ -17,10 +19,11 @@ recurse_macro1 = dedent(
 recurse_code1 = "$photon_region_change;"
 
 class TestMacroReplace:
+    def setup(self):
+        init_macros()
+
     def test_recursive_replace(self):
         """Macro inside a macro is replaced"""
-        macros.clear()
-        parameters.clear()
         code = _parse_and_apply_macros(recurse_macro1 + recurse_code1)
         lines = [line for line in code.splitlines() if line.strip().replace(";", "")]
         assert "Inline replace: $ photon_region_change" in lines[0]
@@ -28,8 +31,6 @@ class TestMacroReplace:
         assert lines[3].strip() == "else:"
 
     def test_blank_inline_replace(self):
-        macros.clear()
-        parameters.clear()
         empty_callbacks.clear()
         macro_defn = "REPLACE {$CALL_USER_ELECTRON} WITH {;}\n"
         code = "$CALL_USER_ELECTRON"
@@ -75,8 +76,6 @@ class TestMacroReplace:
             z = $MXSGE;
             """
         )
-        macros.clear()
-        parameters.clear()
         got = _parse_and_apply_macros(macros_code).splitlines()
         # Check some lines - lots of whitespace left behind after macros removed
         assert '"GAMMA SMALL ENERGY INTERVALS"' in got[2]
@@ -96,7 +95,33 @@ class TestMacroReplace:
             x = $MXMED;
             """
         )
-        macros.clear()
-        parameters.clear()
         code = _parse_and_apply_macros(macros_code)
         assert "x = MXMED;" in code
+
+    def test_replace_comment_macros(self):
+        code = '"Default FOR $SELECT-ELECTRON-MFP; is: $RANDOMSET rnne1;'
+        code = fix_identifiers(code)
+        assert '$ SELECT' in code
+        assert '$ RANDOMSET' in code
+
+    def test_replace_set_interval(self):
+        code = 'elkems = Log(ekems);\n   $SET INTERVAL elkems,eke;'
+        # SET INTERVAL added in `init_macros`
+        init_macros()
+        code = _parse_and_apply_macros(code)
+        assert "# $ SET INTERVAL" in code
+
+    def test_randomset_call(self):
+        macros_code = """REPLACE {$RANDOMSET#;} WITH
+            {;
+            IF ( rng_seed > 24 ) [
+                call ranlux(rng_array); rng_seed = 1;
+            ]
+            {P1} = rng_array(rng_seed);
+            rng_seed = rng_seed + 1;
+            ;
+            }
+        """
+        code = "$RANDOMSET rnn1;"
+        macros_code, code = apply_macros(macros_code, code)
+        assert 'rnn1 = randomset()' in code
