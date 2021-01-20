@@ -82,7 +82,7 @@ class TestMacroReplace:
         assert 'x = YYY;' in got[3]
         assert 'y = ZZZ;' in got[6]
         assert 'z = $MXSGE;' in got[7]
-        assert 2 == len(macros)
+        assert 2 + 1 == len(macros)  # +1 for added macro in init_macros
         assert 'PARAMETER #=#;' in macros
         assert '$MXXXX' in macros
 
@@ -109,7 +109,7 @@ class TestMacroReplace:
         # SET INTERVAL added in `init_macros`
         init_macros()
         code = _parse_and_apply_macros(code)
-        assert "# $ SET INTERVAL" in code
+        assert "   # Unhandled macro '$ SET INTERVAL elkems,eke;" in code.splitlines()[1]
 
     def test_randomset_call(self):
         macros_code = """REPLACE {$RANDOMSET#;} WITH
