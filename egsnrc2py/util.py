@@ -12,7 +12,7 @@ from textwrap import dedent
 
 def test_eval_subst(code):
     pattern = r"\$EVALUATE (\w*) USING (\w*)\((\w*)\);?"
-    subst = """
+    subst = r"""
     [IF] '\g<2>'=SNAME1
     [\g<1>=\g<2>1(L\g<3>)*\g<3>+\g<2>0(L\g<3>);] [ELSE]
     [\g<1>=\g<2>1(L\g<3>,MEDIUM)*\g<3>+\g<2>0(L\g<3>,MEDIUM);]}
@@ -31,6 +31,11 @@ def fix_identifiers(code) -> str:
     # Fix dashes to underscore
     # First, some comment have "---", keep those by enclosing in spaces
     code = re.sub(r'"(.*)\$(\w*)---', r'"\1$\2 --- ', code)
+    # 'Break' macros in comments with a space - at least the ones with $ start
+    # Check for up to 2 of them.
+    code = re.sub(
+        r'"(.*?)\$([\w-]*)([^"\n\$]*)(?:(\$)([\w-]*))?([^"\n]*)',
+        r'"\1$ \2\3\4 \5\6', code)
     for i in range(8, 1, -1):  # up to 7 dashes
         pattern = r"\$" + "-".join([r"(\w*)"]*i)
         subst = r"$" + "_".join([rf"\{j}" for j in range(1, i+1)])

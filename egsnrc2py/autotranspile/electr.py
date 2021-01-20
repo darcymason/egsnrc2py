@@ -1,152 +1,3 @@
-
-
-def AUSGAB(IARG):
-    pass
-
-
-# IMPORTS -------
-import numpy as np
-
-# EMPTY CALLBACKS ----
-add_work_em_field = None
-call_user_electron = None
-de_fluctuation = None
-em_field_ss = None
-emfield_initiate_set_tustep = None
-emfieldinvacuum = None
-particle_selection_electr = None
-set_angles_em_field = None
-set_tustep_em_field = None
-set_tvstep_em_field = None
-set_ustep_em_field = None
-user_controls_tstep_recursion = None
-user_range_discard = None
-vacuum_add_work_em_field = None
-
-
-# CALLBACKS ----
-def calculate_tstep_from_demfp():
-
-      if  compute_tstep :
-
-        total_de = demfp/sig; fedep = total_de
-        ekef  = eke - fedep
-        if  ekef <= E_array(1,medium) :
-             tstep = vacdst;
-        else:
-
-          elkef = Log(ekef)
-          $SET INTERVAL elkef,eke
-          if  lelkef == lelke :
-
-          [       #  initial and final energy are in the same interpolation bin
-              $COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep)
-          else:
-          [   #  initial and final energy are in different interpolation bins,
-              #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke
-              #  and add the pre-calculated range from E(lelkef+1) to E(lelke)
-              ekei = E_array(lelke,medium)
-              elkei = (lelke - eke0(medium))/eke1(medium)
-              $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss)
-              ekei = E_array(lelkef+1,medium)
-              elkei = (lelkef + 1 - eke0(medium))/eke1(medium)
-              $COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep)
-              tstep=tstep+tuss+
-                      range_ep(qel,lelke,medium)-range_ep(qel,lelkef+1,medium)
-
-
-        total_tstep = tstep
-        compute_tstep = False
-
-      tstep = total_tstep/rhof #  non-default density scaling
-def check_negative_ustep():
-
-        if ustep <= 0:
-
-            # Negative ustep---probable truncation problem at a
-            # boundary, which means we are not in the region we think
-            # we are in.  The default macro assumes that user has set
-            # irnew to the region we are really most likely to be
-            # in.  A message is written out whenever ustep is less than -1.e-4
-            if ustep < -1e-4:
-
-                ierust = ierust + 1
-                OUTPUT ierust,ustep,dedx,e[np]-prm,
-                       ir[np],irnew,irold,x[np],y[np],z[np]
-                (i4,' Negative ustep = ',e12.5,' dedx=',F8.4,' ke=',F8.4,
-                 ' ir,irnew,irold =',3i4,' x,y,z =',4e10.3)
-                if ierust > 1000:
-
-                    OUTPUT;(////' Called exit---too many ustep errors'///)
-                    $CALL_EXIT(1)
-
-
-            ustep = 0
-
-def evaluate_sigf():
-
-      if lelec < 0:
-
-           sigf = esig1(Lelke,MEDIUM)*elke+ esig0(Lelke,MEDIUM)  # EVALUATE sigf USING esig(elke)
-           dedx0 = ededx1(Lelke,MEDIUM)*elke+ ededx0(Lelke,MEDIUM)  # EVALUATE dedx0 USING ededx(elke)
-          sigf = sigf/dedx0
-      else:
-
-           sigf = psig1(Lelke,MEDIUM)*elke+ psig0(Lelke,MEDIUM)  # EVALUATE sigf USING psig(elke)
-           dedx0 = pdedx1(Lelke,MEDIUM)*elke+ pdedx0(Lelke,MEDIUM)  # EVALUATE dedx0 USING pdedx(elke)
-          sigf = sigf/dedx0
-
-def set_tvstep():
-
-        ;IF ( vstep < ustep0 )
-
-          ekems = eke - 0.5*tustep*vstep/ustep0*dedx
-             # This estimates the energy loss to the boundary.
-             # tustep was the intended curved path-length,
-             # ustep0 is the average transport distance in the initial direction
-             #        resulting from tustep
-             # vstep = ustep is the reduced average transport distance in the
-             #               initial direction due to boundary crossing
-          $CALCULATE_XI(vstep)
-          if  xi < 0.1 :
-
-            tvstep = vstep*(1 + xi*(0.5 + xi*0.333333))
-          else:
-
-            if  xi < 0.999999 :
-
-               tvstep = -vstep*Log(1 - xi)/xi
-            else:
-
-               # This is an error condition because the average transition
-               # in the initial direction of motion is always smaller than 1/Q1
-               $egs_info(*,' Stoped in SET-TVSTEP because xi > 1! ')
-               $egs_info(*,' Medium: ',medium)
-               $egs_info(*,' Initial energy: ',eke)
-               $egs_info(*,' Average step energy: ',ekems)
-               $egs_info(*,' tustep: ',tustep)
-               $egs_info(*,' ustep0: ',ustep0)
-               $egs_info(*,' vstep:  ',vstep)
-               $egs_info(*,' ==> xi = ',xi)
-               $egs_fatal(*,'This is a fatal error condition')
-
-
-        else:
-
-          tvstep = tustep
-
-def set_ustep():
-
-      ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
-                                      # energy dependent quantities
-      $CALCULATE_XI(tustep)
-      if  xi < 0.1 :
-
-          ustep = tustep*(1 - xi*(0.5 - xi*0.166667))
-        else:
-
-          ustep = tustep*(1 - Exp(-xi))/xi
-
 # !COMMENTS
 # !INDENT C5
 # !INDENT M4
@@ -157,50 +8,42 @@ def set_ustep():
 #                                NATIONAL RESEARCH COUNCIL OF CANADA
 def ELECTR(IRCODE):
 # ******************************************************************
-#    This subroutine has been almost completely recoded to include
-#    the EGSnrc enhancements.
-#
-#    Version 1.0   Iwan Kawrakow       Complete recoding
-#    Version 1.1   Iwan Kawrakow       Corrected implementation of
-#                                      fictitious method (important
-#                                      for low energy transport
+#    This subroutine has been almost completely recoded to include  
+#    the EGSnrc enhancements.                                       
+#                                                                   
+#    Version 1.0   Iwan Kawrakow       Complete recoding            
+#    Version 1.1   Iwan Kawrakow       Corrected implementation of  
+#                                      fictitious method (important 
+#                                      for low energy transport     
 # ******************************************************************
 
-# --- Inline replace: ; -----
 implicit none
-# -------------------------------------------
 
+;integer*4 IRCODE
 
-IRCODE: np.int32
-
-$COMIN_ELECTR # default replacement produces the following:
+# $ comin_electr # default replacement produces the following:
                # COMIN/DEBUG,BOUNDS,EGS-VARIANCE-REDUCTION, ELECIN,EPCONT,
                         # ET-Control,MEDIA,MISC,STACK,THRESH,UPHIIN,
                         # UPHIOT,USEFUL,USER,RANDOM/
-;COMIN/EII-DATA/
-;COMIN/EM/
-lambda_max: np.float64
-sigratio: np.float64
-u_tmp: np.float64
-v_tmp: np.float64
-w_tmp: np.float64
-random_tustep: bool
+# ;comin/eii-data/
+# ;comin/em/
+;real*8 lambda_max, sigratio, u_tmp, v_tmp, w_tmp
+LOGICAL random_tustep
 
-# $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?
-# /******* trying to save evaluation of range.
-do_range: bool
-the_range: np.float64
-# */
+# $ define_local_variables_electr
+/******* trying to save evaluation of range.
+;logical  do_range
+;real*8     the_range
+*/
 
-# data ierust/0/ # To count negative ustep's
+data ierust/0/ # To count negative ustep's
 
-# save ierust
+save ierust
 
-# --- Inline empty replace: $CALL_USER_ELECTRON; -----
+# --- Inline replace: $ CALL_USER_ELECTRON -----
 if call_user_electron:
     call_user_electron()
-# ------------------------------------------------------
-
+# End inline replace: $ CALL_USER_ELECTRON ----
 
 ircode = 1 # Set up normal return-which means there is a photon
             # with less available energy than the lowest energy electron,
@@ -218,13 +61,15 @@ irold = ir[np] # Initialize previous region
 irl    = irold # region number in local variable
 
 
-# --- Inline replace: $start_new_particle; -----
-medium = med(irl)
-# ------------------------------------------------
-
-#  Default replacement for the above is medium = med(irl)
-#  This is made a macro so that it can be replaced with a call to a
-#  user provided function start_new_particle(); for the C/C++ interface
+# --- Inline replace: $ start_new_particle; -----
+if start_new_particle:
+    start_new_particle()
+else:
+    medium = med(irl) 
+# End inline replace: $ start_new_particle; ----
+#  Default replacement for the above is medium = med(irl) 
+#  This is made a macro so that it can be replaced with a call to a 
+#  user provided function start_new_particle(); for the C/C++ interface 
 
 while True:  # :NEWELECTRON: LOOP
 
@@ -233,7 +78,7 @@ while True:  # :NEWELECTRON: LOOP
 
     lelec = iq[np] # Save charge in local variable
                     # (iq = -1 for electrons, 0 for photons and 1 for positrons)
-    qel   = (1+lelec)/2 #  = 0 for electrons, = 1 for positrons
+    qel   = (1+lelec)/2 #  = 0 for electrons, = 1 for positrons 
     peie  = e[np] # precise energy of incident electron (double precision)
     eie   = peie # energy incident electron (conversion to single)
 
@@ -253,7 +98,7 @@ while True:  # :NEWELECTRON: LOOP
 
         # Go through this loop each time we recompute distance to an interaction
         /******* trying to save evaluation of range.
-        do_range = True # compute the range in $COMPUTE_RANGE below
+        do_range = True # compute the range in $ COMPUTE-RANGE below 
         ********/
         compute_tstep = True # MFP resampled => calculate distance to the
                                 # interaction in the USTEP loop
@@ -263,39 +108,71 @@ while True:  # :NEWELECTRON: LOOP
 
             # Not vacuum. Must sample to see how far to next interaction.
 
-            # --- Inline replace: $SELECT_ELECTRON_MFP; -----
+            # --- Inline replace: $ SELECT_ELECTRON_MFP; -----
+            if select_electron_mfp:
+                select_electron_mfp()
+            else:
+    
+                # --- Inline replace: $ RANDOMSET RNNE1; -----
+                if randomset:
+                    RNNE1 = randomset()
+                else:
+                    
+                      if  rng_seed > 24 :
 
-         RNNE1 = randomset(); IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
-             DEMFP=MAX(-LOG(RNNE1),$EPSEMFP)
-            # -------------------------------------------------
+                          call ranlux(rng_array); rng_seed = 1
 
-                #  Default FOR $SELECT_ELECTRON_MFP; is: $RANDOMSET rnne1
+                       RNNE1 = rng_array(rng_seed)
+                      rng_seed = rng_seed + 1
+                    
+                # End inline replace: $ RANDOMSET RNNE1; ---- IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
+                 DEMFP=MAX(-LOG(RNNE1),EPSEMFP)
+            # End inline replace: $ SELECT_ELECTRON_MFP; ----
+                #  Default FOR $ SELECT-ELECTRON-MFP; is: $ RANDOMSET rnne1
                 #                                        demfp = -log(rnne1)
-                # ($RANDOMSET is a macro'ed random number generator)
+                # ($ RANDOMSET is a macro'ed random number generator) 
                 # (demfp = differential electron mean free path)
 
             elke = log(eke)
             # (eke = kinetic energy, rm = rest mass, all in units of MeV)
-            $SET INTERVAL elke,eke # Prepare to approximate cross section
+            # Unhandled macro '$ SET INTERVAL elke,eke;' # Prepare to approximate cross section
 
-            # --- Inline replace: $EVALUATE_SIG0; -----
+            # --- Inline replace: $ EVALUATE_SIG0; -----
+            if evaluate_sig0:
+                evaluate_sig0()
+            else:
+                
+                   if  sig_ismonotone(qel,medium) :
 
-               if  sig_ismonotone(qel,medium) :
+                       # --- Inline replace: $ EVALUATE_SIGF; -----
+                       if evaluate_sigf:
+                           evaluate_sigf()
+                       else:
+                           
+                             if lelec < 0:
 
-                   evaluate_sigf() sig0 = sigf
-               else:
-                   if  lelec < 0 :
-                       sig0 = esig_e(medium)
+                                  sigf = esig1[Lelke,MEDIUM]*elke+ esig0[Lelke,MEDIUM]  # EVALUATE sigf USING esig(elke)
+                                  dedx0 = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING ededx(elke)
+                                 sigf = sigf/dedx0
+                             else:
+
+                                  sigf = psig1[Lelke,MEDIUM]*elke+ psig0[Lelke,MEDIUM]  # EVALUATE sigf USING psig(elke)
+                                  dedx0 = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING pdedx(elke)
+                                 sigf = sigf/dedx0
+
+                       # End inline replace: $ EVALUATE_SIGF; ---- sig0 = sigf
                    else:
-                       sig0 = psig_e(medium);
+                       if  lelec < 0 :
+                           sig0 = esig_e(medium)
+                       else:
+                           sig0 = psig_e(medium);
 
-            # -------------------------------------------
-
+            # End inline replace: $ EVALUATE_SIG0; ----
                # The fix up of the fictitious method uses cross section per
                # energy loss. Therefore, demfp/sig is sub-threshold energy loss
                # until the next discrete interaction occures (see below)
                # As this quantity is a single constant for a material,
-               # $SET INTERVAL is not necessary at this point. However, to not
+               # $ SET INTERVAL is not necessary at this point. However, to not 
                # completely alter the logic of the TSTEP and USTEP loops,
                # this is left for now
 
@@ -309,10 +186,6 @@ while True:  # :NEWELECTRON: LOOP
             if medium == 0:
 
                     # vacuum
-                    # --- Inline empty replace: $EMFIELD_INITIATE_SET_TUSTEP; -----
-                    if emfield_initiate_set_tustep:
-                        emfield_initiate_set_tustep()
-                    # ---------------------------------------------------------------
 
                     tstep = vacdst; ustep = tstep; tustep = ustep
                     callhowfar = True # Always call HOWFAR for vacuum steps!
@@ -327,27 +200,22 @@ while True:  # :NEWELECTRON: LOOP
                     #  The above provide defaults.)
 
                     #  EM field step size restriction in vacuum
-                    # --- Inline empty replace: $SET_TUSTEP_EM_FIELD; -----
-                    if set_tustep_em_field:
-                        set_tustep_em_field()
-                    # -------------------------------------------------------
 
                     ustep = tustep
             else:
 
                 # non-vacuum
-                # --- Inline replace: $SET_RHOF; -----
-                RHOF=RHOR(IRL)/RHO(MEDIUM)
-                # --------------------------------------
-    # density ratio scaling template
+RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                               # EGS allows the density to vary
                               # continuously (user option)
 
-                # --- Inline replace: $SCALE_SIG0; -----
-
-                sig = sig0
-                # ----------------------------------------
-
+                # --- Inline replace: $ SCALE_SIG0; -----
+                if scale_sig0:
+                    scale_sig0()
+                else:
+    
+                    sig = sig0
+                # End inline replace: $ SCALE_SIG0; ----
                 if sig <= 0:
 
                     # This can happen if the threshold for brems,
@@ -366,18 +234,127 @@ while True:  # :NEWELECTRON: LOOP
                     sig0 = 1.E-15
                 else:
 
-                    calculate_tstep_from_demfp()
+                    # --- Inline replace: $ CALCULATE_TSTEP_FROM_DEMFP; -----
+                    if calculate_tstep_from_demfp:
+                        calculate_tstep_from_demfp()
+                    else:
+                        
+                          if  compute_tstep :
+
+                            total_de = demfp/sig; fedep = total_de
+                            ekef  = eke - fedep
+                            if  ekef <= E_array(1,medium) :
+                                 tstep = vacdst; 
+                            else:
+
+                              elkef = Log(ekef)
+                              # Unhandled macro '$ SET INTERVAL elkef,eke;'
+                              if  lelkef == lelke :
+                                  
+                              [       #  initial and final energy are in the same interpolation bin 
+                                  # --- Inline replace: $ COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep); -----
+                                  if compute_drange:
+                                      tstep = compute_drange(eke1, eke2, lelke1, elke1, elke2)
+                                  else:
+        
+                                      fedep = 1 - ekef/eke
+                                      elktmp = 0.5*(elke+elkef+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
+                                               #  the above evaluates the logarithm of the midpoint energy
+                                      lelktmp = lelke
+                                      if lelec < 0:
+
+                                           dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = ededx1(lelktmp,medium)*dedxmid
+                                          # aux = ededx1(lelktmp,medium)/dedxmid
+                                      else:
+                                           dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = pdedx1(lelktmp,medium)*dedxmid
+                                          # aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                      aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
+                                      # tstep = fedep*eke/dedxmid*(1+aux)
+                                      tstep = fedep*eke*dedxmid*(1+aux)
+                                  # End inline replace: $ COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep); ----
+                              else:
+                              [   #  initial and final energy are in different interpolation bins, 
+                                  #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke  
+                                  #  and add the pre-calculated range from E(lelkef+1) to E(lelke) 
+                                  ekei = E_array(lelke,medium)
+                                  elkei = (lelke - eke0(medium))/eke1(medium)
+                                  # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); -----
+                                  if compute_drange:
+                                      tuss = compute_drange(eke1, eke2, lelke1, elke1, elke2)
+                                  else:
+        
+                                      fedep = 1 - ekei/eke
+                                      elktmp = 0.5*(elke+elkei+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
+                                               #  the above evaluates the logarithm of the midpoint energy
+                                      lelktmp = lelke
+                                      if lelec < 0:
+
+                                           dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = ededx1(lelktmp,medium)*dedxmid
+                                          # aux = ededx1(lelktmp,medium)/dedxmid
+                                      else:
+                                           dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = pdedx1(lelktmp,medium)*dedxmid
+                                          # aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                      aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
+                                      # tuss = fedep*eke/dedxmid*(1+aux)
+                                      tuss = fedep*eke*dedxmid*(1+aux)
+                                  # End inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); ----
+                                  ekei = E_array(lelkef+1,medium)
+                                  elkei = (lelkef + 1 - eke0(medium))/eke1(medium)
+                                  # --- Inline replace: $ COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep); -----
+                                  if compute_drange:
+                                      tstep = compute_drange(eke1, eke2, lelke1, elke1, elke2)
+                                  else:
+        
+                                      fedep = 1 - ekef/ekei
+                                      elktmp = 0.5*(elkei+elkef+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
+                                               #  the above evaluates the logarithm of the midpoint energy
+                                      lelktmp = lelkef
+                                      if lelec < 0:
+
+                                           dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = ededx1(lelktmp,medium)*dedxmid
+                                          # aux = ededx1(lelktmp,medium)/dedxmid
+                                      else:
+                                           dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                          dedxmid = 1/dedxmid
+                                          aux = pdedx1(lelktmp,medium)*dedxmid
+                                          # aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                      aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
+                                      # tstep = fedep*ekei/dedxmid*(1+aux)
+                                      tstep = fedep*ekei*dedxmid*(1+aux)
+                                  # End inline replace: $ COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep); ----
+                                  tstep=tstep+tuss+
+                                          range_ep(qel,lelke,medium)-range_ep(qel,lelkef+1,medium)
+
+
+                            total_tstep = tstep
+                            compute_tstep = False
+
+                          tstep = total_tstep/rhof #  non-default density scaling 
+                    # End inline replace: $ CALCULATE_TSTEP_FROM_DEMFP; ----
                 ] # end sig if-else
 
                 # calculate stopping power
                 if lelec < 0:
-                     dedx0 = ededx1(Lelke,MEDIUM)*elke+ ededx0(Lelke,MEDIUM)  # EVALUATE dedx0 USING ededx(elke) # e-
+                     dedx0 = ededx1[Lelke,MEDIUM*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING ededx(elke)] # e-
                 else:
-                     dedx0 = pdedx1(Lelke,MEDIUM)*elke+ pdedx0(Lelke,MEDIUM)  # EVALUATE dedx0 USING pdedx(elke) # e+
+                     dedx0 = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING pdedx(elke) # e+
                 dedx  = rhof*dedx0
 
-                # Determine maximum step-size (Formerly $SET_TUSTEP)
-                 tmxs = tmxs1(Lelke,MEDIUM)*elke+ tmxs0(Lelke,MEDIUM)  # EVALUATE tmxs USING tmxs(elke)
+                # Determine maximum step-size (Formerly $ SET-TUSTEP) 
+                 tmxs = tmxs1[Lelke,MEDIUM]*elke+ tmxs0[Lelke,MEDIUM]  # EVALUATE tmxs USING tmxs(elke)
                 tmxs = tmxs/rhof
 
                 # Compute the range to E_min(medium) (e_min is the first
@@ -385,20 +362,46 @@ while True:  # :NEWELECTRON: LOOP
                 # Don't replace this macro and don't override range, because
                 # the energy loss evaluation below relies on the accurate
                 # (and self-consistent) evaluation of range!
-                # --- Inline replace: $COMPUTE_RANGE; -----
+                # --- Inline replace: $ COMPUTE_RANGE; -----
+                if compute_range:
+                    compute_range()
+                else:
+                    
+                    #         ===============
+                      if  do_range :
 
-                #         ===============
-                  if  do_range :
+                          ekei = E_array(lelke,medium)
+                          elkei = (lelke - eke0(medium))/eke1(medium)
+                          # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range); -----
+                          if compute_drange:
+                              range = compute_drange(eke1, eke2, lelke1, elke1, elke2)
+                          else:
+        
+                              fedep = 1 - ekei/eke
+                              elktmp = 0.5*(elke+elkei+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
+                                       #  the above evaluates the logarithm of the midpoint energy
+                              lelktmp = lelke
+                              if lelec < 0:
 
-                      ekei = E_array(lelke,medium)
-                      elkei = (lelke - eke0(medium))/eke1(medium)
-                      $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range)
-                      the_range = range + range_ep(qel,lelke,medium)
-                      do_range = False
+                                   dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                  dedxmid = 1/dedxmid
+                                  aux = ededx1(lelktmp,medium)*dedxmid
+                                  # aux = ededx1(lelktmp,medium)/dedxmid
+                              else:
+                                   dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                  dedxmid = 1/dedxmid
+                                  aux = pdedx1(lelktmp,medium)*dedxmid
+                                  # aux = pdedx1(lelktmp,medium)/dedxmid
 
-                  range = the_range/rhof
-                # -------------------------------------------
+                              aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
+                              # range = fedep*eke/dedxmid*(1+aux)
+                              range = fedep*eke*dedxmid*(1+aux)
+                          # End inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range); ----
+                          the_range = range + range_ep(qel,lelke,medium)
+                          do_range = False
 
+                      range = the_range/rhof
+                # End inline replace: $ COMPUTE_RANGE; ----
 
                 # The RANDOMIZE-TUSTEP option as coded by AFB forced the
                 # electrons to approach discrete events (Moller,brems etc.)
@@ -407,41 +410,106 @@ while True:  # :NEWELECTRON: LOOP
                 random_tustep = RANDOMIZE_TUSTEP
                 if random_tustep:
 
-                 rnnotu = randomset()
+                    # --- Inline replace: $ RANDOMSET rnnotu; -----
+                    if randomset:
+                        rnnotu = randomset()
+                    else:
+                        
+                          if  rng_seed > 24 :
+
+                              call ranlux(rng_array); rng_seed = 1
+
+                           rnnotu = rng_array(rng_seed)
+                          rng_seed = rng_seed + 1
+                        
+                    # End inline replace: $ RANDOMSET rnnotu; ----
                     tmxs = rnnotu*min(tmxs,smaxir(irl))
                 else:
 
                     tmxs = min(tmxs,smaxir(irl))
 
                 tustep = min(tstep,tmxs,range)
-                # --- Inline empty replace: $SET_TUSTEP_EM_FIELD; -----
-                if set_tustep_em_field:
-                    set_tustep_em_field()
-                # -------------------------------------------------------
  # optional tustep restriction in EM field
 
-                $CALL_HOWNEAR(tperp)
+                # --- Inline replace: $ CALL_HOWNEAR(tperp); -----
+                if call_hownear:
+                    <XXX> = call_hownear(arg0)
+                else:
+    
+                    OUTPUT 35 # 35 in decimal is ascii code for the pound sign
+                    (
+                        ' '/
+                        ' '/
+                        ' ***************************************************************'/
+                        ' ***************************************************************'/
+                        ' '/
+                        ' PRESTA-II is aborting execution because you have not defined   '/
+                        ' the HOWNEAR macro for your geometry.                           '/
+                        ' '/
+                        ' You MUST either do so or employ a limited form of PRESTA-II    '/
+                        ' which does not attempt the refined boundary crossing or lateral'/
+                        ' correlation features of the algorithm.                         '/
+                        ' '/
+                        ' If you include the following macro in your usercode:           '/
+                        ' '/
+                        '                        '/
+                        ' '/
+                        ' you can choose between single scattering mode (very slow) and  '/
+                        ' standard EGS4 mode (no PRESTA enhancments) by the appropriate  '/
+                        ' choice of the parameters in your input file (see the PRESTA-II '/
+                        ' manual)                                                        '/
+                        ' '/
+                        ' ***************************************************************'/
+                        ' ***************************************************************'/
+                        ' '/
+                        ' '/
+                    )
+                    stop
+                # End inline replace: $ CALL_HOWNEAR(tperp); ----
                 dnear[np] = tperp
-                # --- Inline replace: $RANGE_DISCARD; -----
+                # --- Inline replace: $ RANGE_DISCARD; -----
+                if range_discard:
+                    range_discard()
+                else:
+    
+                    ;IF( i_do_rr(irl) = 1 and e[np] < e_max_rr(irl) ) [
+                        if tperp >= range:
+                             [# particle cannot escape local region
+                            idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
+                            go to :USER-ELECTRON-DISCARD: 
 
-                ;IF( i_do_rr(irl) = 1 and e[np] < e_max_rr(irl) ) [
-                    if tperp >= range:
-                         [# particle cannot escape local region
-                        idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
-                        go to :USER-ELECTRON-DISCARD:
 
-
-                # -------------------------------------------
-       # optional regional range rejection for
+                # End inline replace: $ RANGE_DISCARD; ----       # optional regional range rejection for
                                       # particles below e_max_rr if i_do_rr set
 
-                # --- Inline empty replace: $USER_RANGE_DISCARD; -----
-                if user_range_discard:
-                    user_range_discard()
-                # ------------------------------------------------------
-  # default is ;, but user may implement
+ # default is ;, but user may implement
 
-                $SET_SKINDEPTH(eke,elke)
+                # --- Inline replace: $ SET_SKINDEPTH(eke,elke); -----
+                if set_skindepth:
+                    <XXX> = set_skindepth(arg0, arg1)
+                else:
+    
+                    # --- Inline replace: $ CALCULATE_ELASTIC_SCATTERING_MFP(ssmfp,eke,elke); -----
+                    if calculate_elastic_scattering_mfp:
+                        <XXX> = calculate_elastic_scattering_mfp(arg0, arg1, arg2)
+                    else:
+        
+                        blccl = rhof*blcc(medium)
+                        xccl  = rhof*xcc(medium)
+                        p2 = eke*(eke+rmt2); beta2 = p2/(p2 + rmsq)
+                        if  spin_effects :
+
+                          if lelec < 0:
+                                etap = etae_ms1[Lelke,MEDIUM*elke+ etae_ms0[Lelke,MEDIUM]  # EVALUATE etap USING etae_ms(elke) ]
+                          else:
+                                etap = etap_ms1[Lelke,MEDIUM]*elke+ etap_ms0[Lelke,MEDIUM]  # EVALUATE etap USING etap_ms(elke) 
+                           ms_corr = blcce1[Lelke,MEDIUM]*elke+ blcce0[Lelke,MEDIUM]  # EVALUATE ms_corr USING blcce(elke)
+                          blccl = blccl/etap/(1+0.25*etap*xccl/blccl/p2)*ms_corr
+
+                        ssmfp=beta2/blccl
+                    # End inline replace: $ CALCULATE_ELASTIC_SCATTERING_MFP(ssmfp,eke,elke); ----
+                    skindepth = skindepth_for_bca*ssmfp
+                # End inline replace: $ SET_SKINDEPTH(eke,elke); ----
                   # This macro sets the minimum step size for a condensed
                   # history (CH) step. When the exact BCA is used, the minimum
                   # CH step is determined by efficiency considerations only
@@ -452,16 +520,12 @@ while True:  # :NEWELECTRON: LOOP
                   # decisions about the maximum acceptable approximated CH step
 
                 tustep = min(tustep,max(tperp,skindepth))
-                # --- Inline empty replace: $EMFIELD_INITIATE_SET_TUSTEP; -----
-                if emfield_initiate_set_tustep:
-                    emfield_initiate_set_tustep()
-                # ---------------------------------------------------------------
 
                 # The transport logic below is determined by the logical
                 # variables callhhowfar, domultiple and dosingle
-                #
+                # 
                 # There are the following possibilities:
-                #
+                # 
                 #    callhowfar = False  This indicates that the
                 #    ====================  intended step is shorter than tperp
                 #                          independent of BCA used
@@ -478,7 +542,7 @@ while True:  # :NEWELECTRON: LOOP
                 #            end of the step
                 #   - domultiple = True and dosingle = True
                 #        ==> error condition, something with the logic is wrong!
-                #
+                # 
                 #    callhowfar = True This indicates that the intended step
                 #    =================== is longer than tperp and forces a
                 #                        call to hawfar which returns the
@@ -511,7 +575,91 @@ while True:  # :NEWELECTRON: LOOP
                     callmsdist = True # Remember that msdist has been called
 
                     # Fourth order technique for de
-                    $COMPUTE_ELOSS_G(tustep,eke,elke,lelke,de)
+                    # --- Inline replace: $ COMPUTE_ELOSS_G(tustep,eke,elke,lelke,de); -----
+                    if compute_eloss_g:
+                        <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                    else:
+    
+                        tuss = range - range_ep(qel,lelke,medium)/rhof
+                          #  here tuss is the range between the initial energy and the next lower 
+                          #  energy on the interpolation grid 
+                        if  tuss >= tustep :
+                             [  #  Final energy is in the same interpolation bin 
+                            # --- Inline replace: $ COMPUTE_ELOSS(tustep,eke,elke,lelke,de); -----
+                            if compute_eloss:
+                                <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                            else:
+                                
+                                  if  lelec < 0 :
+
+                                       dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
+                                      aux = ededx1(lelke,medium)/dedxmid
+                                  else:
+                                       dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
+                                      aux = pdedx1(lelke,medium)/dedxmid
+
+                                  /*
+                                  de = dedxmid*tustep #  Energy loss using stopping power at the beginning 
+                                  */
+                                  de = dedxmid*tustep*rhof # IK: rhof scaling bug, June 9 2006
+                                                            # rhof scaling must be done here and NOT in 
+                                                            # $ COMPUTE-ELOSS-G below! 
+                                  fedep = de/eke
+                                  de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                             0.25*fedep*(2-aux*(4-aux)))))
+                            # End inline replace: $ COMPUTE_ELOSS(tustep,eke,elke,lelke,de); ----
+                            /* de = de*rhof # IK, rhof bug  */
+                            # IK: rhof scaling bug, June 9 2006. rhof scaling is done in 
+                            #     $ COMPUTE-ELOSS above!                                   
+                        else:
+                               #  pre-calculated ranges                                     
+                            lelktmp = lelke
+                            tuss = (range - tustep)*rhof
+                               #  now tuss is the range of the final energy electron 
+                               #  scaled to the default mass density from PEGS4      
+                            if  tuss <= 0 :
+                                 de = eke - TE(medium)*0.99; 
+                              #  i.e., if the step we intend to take is longer than the particle 
+                              #  range, the particle energy goes down to the threshold 
+                              # (eke is the initial particle energy)  
+                              # originally the entire energy was lost, but msdist_xxx is not prepared
+                              # to deal with such large eloss fractions => changed July 2005.
+                            else:
+                                WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
+                                    lelktmp = lelktmp - 1; ]
+                                elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                                eketmp = E_array(lelktmp+1,medium)
+                                # tuss = range_ep(qel,lelktmp+1,medium) - tuss
+                                # IK: rhof scaling bug, June 9 2006: because of the change in 
+                                #     $ COMPUTE-ELOSS above, we must scale tuss by rhof         
+                                tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
+                                # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
+                                if compute_eloss:
+                                    <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                                else:
+                                    
+                                      if  lelec < 0 :
+
+                                           dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                          aux = ededx1(lelktmp,medium)/dedxmid
+                                      else:
+                                           dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                          aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                      /*
+                                      de = dedxmid*tuss #  Energy loss using stopping power at the beginning 
+                                      */
+                                      de = dedxmid*tuss*rhof # IK: rhof scaling bug, June 9 2006
+                                                                # rhof scaling must be done here and NOT in 
+                                                                # $ COMPUTE-ELOSS-G below! 
+                                      fedep = de/eketmp
+                                      de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                                 0.25*fedep*(2-aux*(4-aux)))))
+                                # End inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); ----
+                                de = de + eke - eketmp
+
+
+                    # End inline replace: $ COMPUTE_ELOSS_G(tustep,eke,elke,lelke,de); ----
 
                     tvstep = tustep; is_ch_step = True
 
@@ -547,20 +695,32 @@ while True:  # :NEWELECTRON: LOOP
                         # Cross the boundary in a single scattering mode
                         domultiple = False # Do not do multiple scattering
                         # Sample the distance to a single scattering event
-                     rnnoss = randomset()
+                        # --- Inline replace: $ RANDOMSET rnnoss; -----
+                        if randomset:
+                            rnnoss = randomset()
+                        else:
+                            
+                              if  rng_seed > 24 :
+
+                                  call ranlux(rng_array); rng_seed = 1
+
+                               rnnoss = rng_array(rng_seed)
+                              rng_seed = rng_seed + 1
+                            
+                        # End inline replace: $ RANDOMSET rnnoss; ----
                         if  rnnoss < 1.e-30 :
 
                             rnnoss = 1.e-30
 
-                        lambda = - Log(1 - rnnoss)
+                        lambda_ = - Log(1 - rnnoss)
                         lambda_max = 0.5*blccl*rm/dedx*(eke/rm+1)**3
-                        if  lambda >= 0 and lambda_max > 0 :
+                        if  lambda_ >= 0 and lambda_max > 0 :
 
-                            if  lambda < lambda_max :
+                            if  lambda_ < lambda_max :
 
-                                tuss=lambda*ssmfp*(1-0.5*lambda/lambda_max)
+                                tuss=lambda_*ssmfp*(1-0.5*lambda_/lambda_max)
                             else:
-                              tuss = 0.5 * lambda * ssmfp
+                              tuss = 0.5 * lambda_ * ssmfp
 
                             if tuss < tustep:
 
@@ -570,8 +730,8 @@ while True:  # :NEWELECTRON: LOOP
                                 dosingle = False
 
                         else:
-                          $egs_warning(*,' lambda > lambda_max: ',
-                             lambda,lambda_max,' eke dedx: ',eke,dedx,
+                          $egs_warning(*,' lambda_ > lambda_max: ',
+                             lambda_,lambda_max,' eke dedx: ',eke,dedx,
                              ' ir medium blcc: ',ir[np],medium,blcc(medium),
                              ' position = ',x[np],y[np],z[np])
                           dosingle = False
@@ -584,7 +744,50 @@ while True:  # :NEWELECTRON: LOOP
                         # exact PLC
                         dosingle = False
                         domultiple = True
-                        set_ustep()
+                        # --- Inline replace: $ SET_USTEP; -----
+                        if set_ustep:
+                            set_ustep()
+                        else:
+    
+                            ekems = eke - 0.5*tustep*dedx # Use mid-point energy to calculate
+                                                            # energy dependent quantities
+                            # --- Inline replace: $ CALCULATE_XI(tustep); -----
+                            if calculate_xi:
+                                <XXX> = calculate_xi(arg0)
+                            else:
+        
+                                p2 = ekems*(ekems+rmt2); beta2 = p2/(p2 + rmsq)
+                                chia2 = xccl/(4*blccl*p2)
+                                                              # Note that our chia2 is Moliere chia2/4
+                                                              # Note also that xcc is now old egs xcc**2
+                                xi = 0.5*xccl/p2/beta2*tustep
+                                if  spin_effects :
+
+                                    elkems = Log(ekems)
+                                    # Unhandled macro '$ SET INTERVAL elkems,eke;'
+                                    if lelec < 0:
+
+                                         etap = etae_ms1[Lelkems,MEDIUM]*elkems+ etae_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etae_ms(elkems)
+                                         xi_corr = q1ce_ms1[Lelkems,MEDIUM]*elkems+ q1ce_ms0[Lelkems,MEDIUM]  # EVALUATE xi_corr USING q1ce_ms(elkems)
+                                    else:
+                                         etap = etap_ms1[Lelkems,MEDIUM]*elkems+ etap_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etap_ms(elkems)
+                                         xi_corr = q1cp_ms1[Lelkems,MEDIUM]*elkems+ q1cp_ms0[Lelkems,MEDIUM]  # EVALUATE xi_corr USING q1cp_ms(elkems)
+
+                                    chia2 = chia2*etap; xi = xi*xi_corr
+                                     ms_corr = blcce1[Lelkems,MEDIUM]*elkems+ blcce0[Lelkems,MEDIUM]  # EVALUATE ms_corr USING blcce(elkems)
+                                    blccl = blccl*ms_corr
+                                else:
+                                     xi_corr = 1; etap = 1; 
+                                xi = xi*(Log(1+1./chia2)-1/(1+chia2))
+                            # End inline replace: $ CALCULATE_XI(tustep); ----
+                            if  xi < 0.1 :
+
+                                ustep = tustep*(1 - xi*(0.5 - xi*0.166667))
+                              else:
+
+                                ustep = tustep*(1 - Exp(-xi))/xi
+
+                        # End inline replace: $ SET_USTEP; ----
 
                     if ustep < tperp:
 
@@ -596,25 +799,23 @@ while True:  # :NEWELECTRON: LOOP
 
             ] # end non-vacuum test
 
-            # --- Inline empty replace: $SET_USTEP_EM_FIELD; -----
-            if set_ustep_em_field:
-                set_ustep_em_field()
-            # ------------------------------------------------------
-  # additional ustep restriction in em field
-                                  # default for $SET_USTEP_EM_FIELD; is ;(null)
+ # additional ustep restriction in em field
+                                  # default for $ SET-USTEP-EM-FIELD; is ;(null) 
             irold  = ir[np] # save current region
             irnew  = ir[np] # default new region is current region
             idisc  = 0 # default is no discard (this flag is initialized here)
             ustep0 = ustep # Save the intended ustep.
 
             # IF(callhowfar) [ call howfar; ]
-            # --- Inline replace: $CALL_HOWFAR_IN_ELECTR; -----
-
-              if callhowfar or wt[np] <= 0:
-
-                   call howfar;
-            # ---------------------------------------------------
- # The above is the default replacement
+            # --- Inline replace: $ CALL_HOWFAR_IN_ELECTR; -----
+            if call_howfar_in_electr:
+                call_howfar_in_electr()
+            else:
+                
+                  if callhowfar or wt[np] <= 0:
+                
+                       call howfar; 
+            # End inline replace: $ CALL_HOWFAR_IN_ELECTR; ---- # The above is the default replacement
 
             # Now see if user requested discard
             if idisc > 0) # (idisc is returned by howfar:
@@ -622,7 +823,34 @@ while True:  # :NEWELECTRON: LOOP
                 # User requested immediate discard
                 go to :USER-ELECTRON-DISCARD:
 
-            check_negative_ustep()
+            # --- Inline replace: $ CHECK_NEGATIVE_USTEP; -----
+            if check_negative_ustep:
+                check_negative_ustep()
+            else:
+                
+                    if ustep <= 0:
+
+                        # Negative ustep---probable truncation problem at a
+                        # boundary, which means we are not in the region we think
+                        # we are in.  The default macro assumes that user has set
+                        # irnew to the region we are really most likely to be
+                        # in.  A message is written out whenever ustep is less than -1.e-4
+                        if ustep < -1e-4:
+
+                            ierust = ierust + 1
+                            OUTPUT ierust,ustep,dedx,e[np]-prm,
+                                   ir[np],irnew,irold,x[np],y[np],z[np]
+                            (i4,' Negative ustep = ',e12.5,' dedx=',F8.4,' ke=',F8.4,
+                             ' ir,irnew,irold =',3i4,' x,y,z =',4e10.3)
+                            if ierust > 1000:
+
+                                OUTPUT;(////' Called exit---too many ustep errors'///)
+                                $CALL_EXIT(1)
+
+
+                        ustep = 0
+
+            # End inline replace: $ CHECK_NEGATIVE_USTEP; ----
 
             if ustep == 0 or medium = 0:
 
@@ -635,10 +863,6 @@ while True:  # :NEWELECTRON: LOOP
                         # transport in EMF in vacuum:
                         # only a B or and E field can be active
                         # (not both at the same time)
-                        # --- Inline empty replace: $EMFieldInVacuum; -----
-                        if emfieldinvacuum:
-                            emfieldinvacuum()
-                        # ---------------------------------------------------
 
                     else:
 
@@ -648,16 +872,10 @@ while True:  # :NEWELECTRON: LOOP
                         # ( vstep is ustep truncated (possibly) by howfar
                         #  tvstep is the total curved path associated with vstep)
                         edep = pzero # no energy loss in vacuum
-                        # --- Inline empty replace: $VACUUM_ADD_WORK_EM_FIELD; -----
-                        if vacuum_add_work_em_field:
-                            vacuum_add_work_em_field()
-                        # ------------------------------------------------------------
 
                             # additional vacuum transport in em field
                         e_range = vacdst
-                        IARG = TRANAUSB
-                        if IAUSFL[IARG + 1] != 0:
-                            AUSGAB(IARG)
+IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                         # Transport the particle
                         x[np] = x[np] + u[np]*vstep
                         y[np] = y[np] + v[np]*vstep
@@ -666,25 +884,25 @@ while True:  # :NEWELECTRON: LOOP
                             # (dnear is distance to the nearest boundary
                             #  that goes along with particle stack and
                             #  which the user's howfar can supply (option)
-                        # --- Inline empty replace: $SET_ANGLES_EM_FIELD; -----
-                        if set_angles_em_field:
-                            set_angles_em_field()
-                        # -------------------------------------------------------
 
-                            # default for $SET_ANGLES_EM_FIELD; is ; (null)
+                            # default for $ SET-ANGLES-EM-FIELD; is ; (null) 
                              # (allows for EM field deflection
                     ] # end of EM_MACROS_ACTIVE block
                 ] # end of vacuum step
 
                 if irnew != irold:
 
-                     $electron_region_change;
+                     [ # --- Inline replace: $ electron_region_change; -----
+ if electron_region_change:
+     electron_region_change()
+ else:
+    
+     ir[np] = irnew; irl = irnew; medium = med(irl)
+ # End inline replace: $ electron_region_change; ---- ]
 
-                if ustep != 0:
+                if ustep != 0) [IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0:
 
-                    IARG = TRANAUSA
-                    if IAUSFL[IARG + 1] != 0:
-                        AUSGAB(IARG)
+                    CALL AUSGAB(IARG)]
                 if eie <= ecut(irl):
                     go to :ECUT-DISCARD:
                 if ustep != 0 and idisc < 0:
@@ -694,10 +912,6 @@ while True:  # :NEWELECTRON: LOOP
             ] # Go try another big step in (possibly) new medium
 
             vstep = ustep
-            # --- Inline empty replace: $EM_FIELD_SS; -----
-            if em_field_ss:
-                em_field_ss()
-            # -----------------------------------------------
 
             if callhowfar:
 
@@ -717,12 +931,172 @@ while True:  # :NEWELECTRON: LOOP
                     # =>we are doing an approximate CH step
                     # calculate the average curved path-length corresponding
                     # to vstep
-                    set_tvstep()
+                    # --- Inline replace: $ SET_TVSTEP; -----
+                    if set_tvstep:
+                        set_tvstep()
+                    else:
+    
+                        ;IF ( vstep < ustep0 )
+
+                          ekems = eke - 0.5*tustep*vstep/ustep0*dedx
+                             # This estimates the energy loss to the boundary.
+                             # tustep was the intended curved path-length,
+                             # ustep0 is the average transport distance in the initial direction
+                             #        resulting from tustep
+                             # vstep = ustep is the reduced average transport distance in the 
+                             #               initial direction due to boundary crossing
+                          # --- Inline replace: $ CALCULATE_XI(vstep); -----
+                          if calculate_xi:
+                              <XXX> = calculate_xi(arg0)
+                          else:
+        
+                              p2 = ekems*(ekems+rmt2); beta2 = p2/(p2 + rmsq)
+                              chia2 = xccl/(4*blccl*p2)
+                                                            # Note that our chia2 is Moliere chia2/4
+                                                            # Note also that xcc is now old egs xcc**2
+                              xi = 0.5*xccl/p2/beta2*vstep
+                              if  spin_effects :
+
+                                  elkems = Log(ekems)
+                                  # Unhandled macro '$ SET INTERVAL elkems,eke;'
+                                  if lelec < 0:
+
+                                       etap = etae_ms1[Lelkems,MEDIUM]*elkems+ etae_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etae_ms(elkems)
+                                       xi_corr = q1ce_ms1[Lelkems,MEDIUM]*elkems+ q1ce_ms0[Lelkems,MEDIUM]  # EVALUATE xi_corr USING q1ce_ms(elkems)
+                                  else:
+                                       etap = etap_ms1[Lelkems,MEDIUM]*elkems+ etap_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etap_ms(elkems)
+                                       xi_corr = q1cp_ms1[Lelkems,MEDIUM]*elkems+ q1cp_ms0[Lelkems,MEDIUM]  # EVALUATE xi_corr USING q1cp_ms(elkems)
+
+                                  chia2 = chia2*etap; xi = xi*xi_corr
+                                   ms_corr = blcce1[Lelkems,MEDIUM]*elkems+ blcce0[Lelkems,MEDIUM]  # EVALUATE ms_corr USING blcce(elkems)
+                                  blccl = blccl*ms_corr
+                              else:
+                                   xi_corr = 1; etap = 1; 
+                              xi = xi*(Log(1+1./chia2)-1/(1+chia2))
+                          # End inline replace: $ CALCULATE_XI(vstep); ----
+                          if  xi < 0.1 :
+
+                            tvstep = vstep*(1 + xi*(0.5 + xi*0.333333))
+                          else:
+
+                            if  xi < 0.999999 :
+
+                               tvstep = -vstep*Log(1 - xi)/xi
+                            else:
+
+                               # This is an error condition because the average transition 
+                               # in the initial direction of motion is always smaller than 1/Q1
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logger.info({P2})
+                               logging.critical('***************** Error: ')
+    
+                                       logging.critical('{P2}')
+    
+                                       logging.critical('***************** Quitting now.')
+    
+                                       sys.exit(1)
+
+
+                        else:
+
+                          tvstep = tustep
+
+                    # End inline replace: $ SET_TVSTEP; ----
 
                 # Fourth order technique for dedx
                 # Must be done for an approx. CH step or a
                 # single scattering step.
-                $COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de)
+                # --- Inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); -----
+                if compute_eloss_g:
+                    <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                else:
+    
+                    tuss = range - range_ep(qel,lelke,medium)/rhof
+                      #  here tuss is the range between the initial energy and the next lower 
+                      #  energy on the interpolation grid 
+                    if  tuss >= tvstep :
+                         [  #  Final energy is in the same interpolation bin 
+                        # --- Inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); -----
+                        if compute_eloss:
+                            <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                        else:
+                            
+                              if  lelec < 0 :
+
+                                   dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
+                                  aux = ededx1(lelke,medium)/dedxmid
+                              else:
+                                   dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
+                                  aux = pdedx1(lelke,medium)/dedxmid
+
+                              /*
+                              de = dedxmid*tvstep #  Energy loss using stopping power at the beginning 
+                              */
+                              de = dedxmid*tvstep*rhof # IK: rhof scaling bug, June 9 2006
+                                                        # rhof scaling must be done here and NOT in 
+                                                        # $ COMPUTE-ELOSS-G below! 
+                              fedep = de/eke
+                              de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                         0.25*fedep*(2-aux*(4-aux)))))
+                        # End inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); ----
+                        /* de = de*rhof # IK, rhof bug  */
+                        # IK: rhof scaling bug, June 9 2006. rhof scaling is done in 
+                        #     $ COMPUTE-ELOSS above!                                   
+                    else:
+                           #  pre-calculated ranges                                     
+                        lelktmp = lelke
+                        tuss = (range - tvstep)*rhof
+                           #  now tuss is the range of the final energy electron 
+                           #  scaled to the default mass density from PEGS4      
+                        if  tuss <= 0 :
+                             de = eke - TE(medium)*0.99; 
+                          #  i.e., if the step we intend to take is longer than the particle 
+                          #  range, the particle energy goes down to the threshold 
+                          # (eke is the initial particle energy)  
+                          # originally the entire energy was lost, but msdist_xxx is not prepared
+                          # to deal with such large eloss fractions => changed July 2005.
+                        else:
+                            WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
+                                lelktmp = lelktmp - 1; ]
+                            elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                            eketmp = E_array(lelktmp+1,medium)
+                            # tuss = range_ep(qel,lelktmp+1,medium) - tuss
+                            # IK: rhof scaling bug, June 9 2006: because of the change in 
+                            #     $ COMPUTE-ELOSS above, we must scale tuss by rhof         
+                            tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
+                            # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
+                            if compute_eloss:
+                                <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                            else:
+                                
+                                  if  lelec < 0 :
+
+                                       dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                      aux = ededx1(lelktmp,medium)/dedxmid
+                                  else:
+                                       dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                      aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                  /*
+                                  de = dedxmid*tuss #  Energy loss using stopping power at the beginning 
+                                  */
+                                  de = dedxmid*tuss*rhof # IK: rhof scaling bug, June 9 2006
+                                                            # rhof scaling must be done here and NOT in 
+                                                            # $ COMPUTE-ELOSS-G below! 
+                                  fedep = de/eketmp
+                                  de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                             0.25*fedep*(2-aux*(4-aux)))))
+                            # End inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); ----
+                            de = de + eke - eketmp
+
+
+                # End inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); ----
             else:
 
                # callhowfar=False => step has not been reduced due to
@@ -732,43 +1106,111 @@ while True:  # :NEWELECTRON: LOOP
 
                   # Second order technique for dedx
                   # Already done in a normal CH step with call to msdist
-                  $COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de)
+                  # --- Inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); -----
+                  if compute_eloss_g:
+                      <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                  else:
+    
+                      tuss = range - range_ep(qel,lelke,medium)/rhof
+                        #  here tuss is the range between the initial energy and the next lower 
+                        #  energy on the interpolation grid 
+                      if  tuss >= tvstep :
+                           [  #  Final energy is in the same interpolation bin 
+                          # --- Inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); -----
+                          if compute_eloss:
+                              <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                          else:
+                              
+                                if  lelec < 0 :
+
+                                     dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
+                                    aux = ededx1(lelke,medium)/dedxmid
+                                else:
+                                     dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
+                                    aux = pdedx1(lelke,medium)/dedxmid
+
+                                /*
+                                de = dedxmid*tvstep #  Energy loss using stopping power at the beginning 
+                                */
+                                de = dedxmid*tvstep*rhof # IK: rhof scaling bug, June 9 2006
+                                                          # rhof scaling must be done here and NOT in 
+                                                          # $ COMPUTE-ELOSS-G below! 
+                                fedep = de/eke
+                                de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                           0.25*fedep*(2-aux*(4-aux)))))
+                          # End inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); ----
+                          /* de = de*rhof # IK, rhof bug  */
+                          # IK: rhof scaling bug, June 9 2006. rhof scaling is done in 
+                          #     $ COMPUTE-ELOSS above!                                   
+                      else:
+                             #  pre-calculated ranges                                     
+                          lelktmp = lelke
+                          tuss = (range - tvstep)*rhof
+                             #  now tuss is the range of the final energy electron 
+                             #  scaled to the default mass density from PEGS4      
+                          if  tuss <= 0 :
+                               de = eke - TE(medium)*0.99; 
+                            #  i.e., if the step we intend to take is longer than the particle 
+                            #  range, the particle energy goes down to the threshold 
+                            # (eke is the initial particle energy)  
+                            # originally the entire energy was lost, but msdist_xxx is not prepared
+                            # to deal with such large eloss fractions => changed July 2005.
+                          else:
+                              WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
+                                  lelktmp = lelktmp - 1; ]
+                              elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                              eketmp = E_array(lelktmp+1,medium)
+                              # tuss = range_ep(qel,lelktmp+1,medium) - tuss
+                              # IK: rhof scaling bug, June 9 2006: because of the change in 
+                              #     $ COMPUTE-ELOSS above, we must scale tuss by rhof         
+                              tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
+                              # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
+                              if compute_eloss:
+                                  <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                              else:
+                                  
+                                    if  lelec < 0 :
+
+                                         dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+                                        aux = ededx1(lelktmp,medium)/dedxmid
+                                    else:
+                                         dedxmid = pdedx1[Lelktmp,MEDIUM]*elktmp+ pdedx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING pdedx(elktmp)
+                                        aux = pdedx1(lelktmp,medium)/dedxmid
+
+                                    /*
+                                    de = dedxmid*tuss #  Energy loss using stopping power at the beginning 
+                                    */
+                                    de = dedxmid*tuss*rhof # IK: rhof scaling bug, June 9 2006
+                                                              # rhof scaling must be done here and NOT in 
+                                                              # $ COMPUTE-ELOSS-G below! 
+                                    fedep = de/eketmp
+                                    de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+                                               0.25*fedep*(2-aux*(4-aux)))))
+                              # End inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); ----
+                              de = de + eke - eketmp
 
 
-            # --- Inline empty replace: $SET_TVSTEP_EM_FIELD; -----
-            if set_tvstep_em_field:
-                set_tvstep_em_field()
-            # -------------------------------------------------------
+                  # End inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); ----
+
+
  # additional path length correction in em field
                 # ( Calculates tvstep given vstep
-                #  default for $SET_TVSTEP_EM_FIELD; is ; (null)
+                #  default for $ SET-TVSTEP-EM-FIELD; is ; (null) 
 
             save_de = de # the energy loss is used to calculate the number
                               # of MFP gone up to now. If energy loss
                               # fluctuations are implemented, de will be
-                              # changed in $DE_FLUCTUATION; => save
+                              # changed in $ DE-FLUCTUATION; => save 
 
             # The following macro template allows the user to change the
             # ionization loss.
             # (Provides a user hook for Landau/Vavilov processes)
-            # --- Inline empty replace: $DE_FLUCTUATION; -----
-            if de_fluctuation:
-                de_fluctuation()
-            # --------------------------------------------------
 
-                # default for $DE_FLUCTUATION; is ; (null)
+                # default for $ DE-FLUCTUATION; is ; (null) 
             edep = de # energy deposition variable for user
-            # --- Inline empty replace: $ADD_WORK_EM_FIELD; -----
-            if add_work_em_field:
-                add_work_em_field()
-            # -----------------------------------------------------
-  # e-loss or gain in em field
-            # --- Inline empty replace: $ADD_WORK_EM_FIELD; -----
-            if add_work_em_field:
-                add_work_em_field()
-            # -----------------------------------------------------
-  # EEMF implementation
-                # Default for $ADD_WORK_EM_FIELD; is ; (null)
+ # e-loss or gain in em field
+ # EEMF implementation
+                # Default for $ ADD-WORK-EM-FIELD; is ; (null) 
             ekef = eke - de # (final kinetic energy)
             eold = eie # save old value
             enew = eold - de # energy at end of transport
@@ -780,20 +1222,20 @@ while True:  # :NEWELECTRON: LOOP
                 if  domultiple :
 
                     # Approximated CH step => do multiple scattering
-                    #
-                    # ekems, elkems, beta2 have been set in either $SET_TUSTEP
-                    # or $SET_TVSTEP if spin_effects is True, they are
+                    # 
+                    # ekems, elkems, beta2 have been set in either $ SET-TUSTEP 
+                    # or $ SET-TVSTEP if spin_effects is True, they are 
                     # not needed if spin_effects is False
-                    #
+                    # 
                     # chia2,etap,xi,xi_corr are also set in the above macros
-                    #
+                    # 
                     # qel (0 for e-, 1 for e+) and medium are now also required
                     # (for the spin rejection loop)
-                    #
-                    lambda = blccl*tvstep/beta2/etap/(1+chia2)
+                    # 
+                    lambda_ = blccl*tvstep/beta2/etap/(1+chia2)
                     xi = xi/xi_corr
                     findindex = True; spin_index = True
-                    call mscat(lambda,chia2,xi,elkems,beta2,qel,medium,
+                    call mscat(lambda_,chia2,xi,elkems,beta2,qel,medium,
                                spin_effects,findindex,spin_index,
                                costhe,sinthe)
                 else:
@@ -809,11 +1251,11 @@ while True:  # :NEWELECTRON: LOOP
                        if  spin_effects :
 
                          elkems = Log(ekems)
-                         $SET INTERVAL elkems,eke
+                         # Unhandled macro '$ SET INTERVAL elkems,eke;'
                          if lelec < 0:
-                              etap = etae_ms1(Lelkems,MEDIUM)*elkems+ etae_ms0(Lelkems,MEDIUM)  # EVALUATE etap USING etae_ms(elkems)
+                              etap = etae_ms1[Lelkems,MEDIUM*elkems+ etae_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etae_ms(elkems)]
                          else:
-                              etap = etap_ms1(Lelkems,MEDIUM)*elkems+ etap_ms0(Lelkems,MEDIUM)  # EVALUATE etap USING etap_ms(elkems)
+                              etap = etap_ms1[Lelkems,MEDIUM]*elkems+ etap_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etap_ms(elkems)
                          chia2 = chia2*etap
 
                        call sscat(chia2,elkems,beta2,qel,medium,
@@ -868,11 +1310,9 @@ while True:  # :NEWELECTRON: LOOP
                     u_final = u[np]; v_final = v[np]; w_final = w[np]
                     u[np] = u_tmp; v[np] = v_tmp; w[np] = w_tmp
                 else:
-                     u_final = u[np]; v_final = v[np]; w_final = w[np];
+                     u_final = u[np]; v_final = v[np]; w_final = w[np]; 
 
-            IARG = TRANAUSB
-            if IAUSFL[IARG + 1] != 0:
-                AUSGAB(IARG)
+IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
 
             # Transport the particle
 
@@ -881,12 +1321,8 @@ while True:  # :NEWELECTRON: LOOP
 
             dnear[np] = dnear[np] - vstep
             irold = ir[np] # save previous region
-            # --- Inline empty replace: $SET_ANGLES_EM_FIELD; -----
-            if set_angles_em_field:
-                set_angles_em_field()
-            # -------------------------------------------------------
 
-            # Default for $SET_ANGLES_EM_FIELD; is ; (null)
+            # Default for $ SET-ANGLES-EM-FIELD; is ; (null) 
 
 
             # Now done with multiple scattering,
@@ -899,13 +1335,13 @@ while True:  # :NEWELECTRON: LOOP
             e[np] = peie
 
             # IF( irnew ~= irl and eie <= ecut(irl)) [
-            # IK: the above is clearly a bug. If the particle energy falls
-            #     below ecut, but the particle is actually entering a new
-            #     region, the discard will happen in the current region
-            #     instead the next. If the particle is a positron, all
-            #     resulting annihilation photons will have the new position
-            #     but the old region => confusion in the geometry routine
-            #     is very likely.      Jan 27 2004
+            # IK: the above is clearly a bug. If the particle energy falls 
+            #     below ecut, but the particle is actually entering a new 
+            #     region, the discard will happen in the current region 
+            #     instead the next. If the particle is a positron, all 
+            #     resulting annihilation photons will have the new position 
+            #     but the old region => confusion in the geometry routine 
+            #     is very likely.      Jan 27 2004 
             if  irnew == irl and eie <= ecut(irl):
 
                go to :ECUT-DISCARD:
@@ -915,16 +1351,20 @@ while True:  # :NEWELECTRON: LOOP
 
                 ekeold = eke; eke = eie - rm # update kinetic energy
                 elke   = log(eke)
-                $SET INTERVAL elke,eke # Get updated interval
+                # Unhandled macro '$ SET INTERVAL elke,eke;' # Get updated interval
 
             if irnew != irold:
 
-                 $electron_region_change;
+                 [ # --- Inline replace: $ electron_region_change; -----
+ if electron_region_change:
+     electron_region_change()
+ else:
+    
+     ir[np] = irnew; irl = irnew; medium = med(irl)
+ # End inline replace: $ electron_region_change; ---- ]
 
             # After transport call to user scoring routine
-            IARG = TRANAUSA
-            if IAUSFL[IARG + 1] != 0:
-                AUSGAB(IARG)
+IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
 
             if eie <= ecut(irl):
 
@@ -940,25 +1380,22 @@ while True:  # :NEWELECTRON: LOOP
 
                  NEXT :TSTEP:
 
-            # --- Inline empty replace: $USER_CONTROLS_TSTEP_RECURSION; -----
-            if user_controls_tstep_recursion:
-                user_controls_tstep_recursion()
-            # -----------------------------------------------------------------
 
                 # NRCC update 87/12/08--default is null
 
-            # --- Inline replace: $UPDATE_DEMFP; -----
-
-            demfp = demfp - save_de*sig
-            total_de = total_de - save_de
-            total_tstep = total_tstep - tvstep*rhof
-            if  total_tstep < 1e-9 :
-                 demfp = 0;
-            # ------------------------------------------
-
+            # --- Inline replace: $ UPDATE_DEMFP; -----
+            if update_demfp:
+                update_demfp()
+            else:
+    
+                demfp = demfp - save_de*sig
+                total_de = total_de - save_de
+                total_tstep = total_tstep - tvstep*rhof
+                if  total_tstep < 1e-9 :
+                     demfp = 0; 
+            # End inline replace: $ UPDATE_DEMFP; ----
 
         if demfp < EPSEMFP:
-
 
             break  # end ustep loop
 
@@ -966,11 +1403,39 @@ while True:  # :NEWELECTRON: LOOP
         # this will take the energy variation of the sigma into
         # account using the fictitious sigma method.
 
-        evaluate_sigf()
+        # --- Inline replace: $ EVALUATE_SIGF; -----
+        if evaluate_sigf:
+            evaluate_sigf()
+        else:
+            
+              if lelec < 0:
+
+                   sigf = esig1[Lelke,MEDIUM]*elke+ esig0[Lelke,MEDIUM]  # EVALUATE sigf USING esig(elke)
+                   dedx0 = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING ededx(elke)
+                  sigf = sigf/dedx0
+              else:
+
+                   sigf = psig1[Lelke,MEDIUM]*elke+ psig0[Lelke,MEDIUM]  # EVALUATE sigf USING psig(elke)
+                   dedx0 = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedx0 USING pdedx(elke)
+                  sigf = sigf/dedx0
+
+        # End inline replace: $ EVALUATE_SIGF; ----
 
         sigratio = sigf/sig0
 
-     rfict = randomset()
+        # --- Inline replace: $ RANDOMSET rfict; -----
+        if randomset:
+            rfict = randomset()
+        else:
+            
+              if  rng_seed > 24 :
+
+                  call ranlux(rng_array); rng_seed = 1
+
+               rfict = rng_array(rng_seed)
+              rng_seed = rng_seed + 1
+            
+        # End inline replace: $ RANDOMSET rfict; ----
 
     if rfict <= sigratio:
 
@@ -981,13 +1446,27 @@ while True:  # :NEWELECTRON: LOOP
     if lelec < 0:
 
         # e-,check branching ratio
-        # --- Inline replace: $EVALUATE_EBREM_FRACTION; -----
+        # --- Inline replace: $ EVALUATE_EBREM_FRACTION; -----
+        if evaluate_ebrem_fraction:
+            evaluate_ebrem_fraction()
+        else:
+    
+             ebr1 = ebr11[Lelke,MEDIUM]*elke+ ebr10[Lelke,MEDIUM]  # EVALUATE ebr1 USING ebr1(elke)
+        # End inline replace: $ EVALUATE_EBREM_FRACTION; ----
+          # Default is $ EVALUATE ebr1 USING ebr1(elke) 
+        # --- Inline replace: $ RANDOMSET rnno24; -----
+        if randomset:
+            rnno24 = randomset()
+        else:
+            
+              if  rng_seed > 24 :
 
-         ebr1 = ebr11(Lelke,MEDIUM)*elke+ ebr10(Lelke,MEDIUM)  # EVALUATE ebr1 USING ebr1(elke)
-        # -----------------------------------------------------
+                  call ranlux(rng_array); rng_seed = 1
 
-          # Default is  ebr1 = ebr11(Lelke,MEDIUM)*elke+ ebr10(Lelke,MEDIUM)  # EVALUATE ebr1 USING ebr1(elke)
-     rnno24 = randomset()
+               rnno24 = rng_array(rng_seed)
+              rng_seed = rng_seed + 1
+            
+        # End inline replace: $ RANDOMSET rnno24; ----
         if rnno24 <= ebr1:
 
             # It was bremsstrahlung
@@ -999,7 +1478,7 @@ while True:  # :NEWELECTRON: LOOP
             # even if E<moller threshold as EII interactions go down to
             # the ionization threshold which may be less than thmoll.
             if e[np] <= thmoll(medium) and eii_flag == 0:
-
+                
                  # (thmoll = lower Moller threshold)
 
                 # Not enough energy for Moller, so
@@ -1009,99 +1488,82 @@ while True:  # :NEWELECTRON: LOOP
                     # Brems not allowed either.
                 go to :EBREMS:
 
-            IARG = MOLLAUSB
-            if IAUSFL[IARG + 1] != 0:
-                AUSGAB(IARG)
+IARG=MOLLAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
             call moller
             # The following macro template allows the user to change the
             # particle selection scheme (e.g., adding importance sampling
             # such as splitting, leading particle selection, etc.).
-            # (Default macro is template '$PARTICLE_SELECTION_ELECTR'
+            # (Default macro is template '$ PARTICLE-SELECTION-ELECTR' 
             # which in turn has the 'null' replacement ';')
-            # --- Inline replace: $PARTICLE_SELECTION_MOLLER; -----
-            # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
-            if particle_selection_electr:
-                particle_selection_electr()
-            # -------------------------------------------------------------
 
-            # -------------------------------------------------------
-
-            IARG = MOLLAUSA
-            if IAUSFL[IARG + 1] != 0:
-                AUSGAB(IARG)
+IARG=MOLLAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
             if  iq[np] == 0 :
                  return
 
         go to :NEWELECTRON: # Electron is lowest energy-follow it
 
     # e+ interaction. pbr1 = brems/(brems + bhabha + annih
-    # --- Inline replace: $EVALUATE_PBREM_FRACTION; -----
+    # --- Inline replace: $ EVALUATE_PBREM_FRACTION; -----
+    if evaluate_pbrem_fraction:
+        evaluate_pbrem_fraction()
+    else:
+    
+         pbr1 = pbr11[Lelke,MEDIUM]*elke+ pbr10[Lelke,MEDIUM]  # EVALUATE pbr1 USING pbr1(elke)
+    # End inline replace: $ EVALUATE_PBREM_FRACTION; ----
+       # Default is $ EVALUATE pbr1 USING pbr1(elke) 
+    # --- Inline replace: $ RANDOMSET rnno25; -----
+    if randomset:
+        rnno25 = randomset()
+    else:
+        
+          if  rng_seed > 24 :
 
-     pbr1 = pbr11(Lelke,MEDIUM)*elke+ pbr10(Lelke,MEDIUM)  # EVALUATE pbr1 USING pbr1(elke)
-    # -----------------------------------------------------
+              call ranlux(rng_array); rng_seed = 1
 
-       # Default is  pbr1 = pbr11(Lelke,MEDIUM)*elke+ pbr10(Lelke,MEDIUM)  # EVALUATE pbr1 USING pbr1(elke)
- rnno25 = randomset()
+           rnno25 = rng_array(rng_seed)
+          rng_seed = rng_seed + 1
+        
+    # End inline replace: $ RANDOMSET rnno25; ----
     if rnno25 < pbr1:
         go to :EBREMS: # It was bremsstrahlung
     # Decide between bhabha and annihilation
     # pbr2 is (brems + bhabha)/(brems + bhabha + annih)
-    # --- Inline replace: $EVALUATE_BHABHA_FRACTION; -----
-
-     pbr2 = pbr21(Lelke,MEDIUM)*elke+ pbr20(Lelke,MEDIUM)  # EVALUATE pbr2 USING pbr2(elke)
-    # ------------------------------------------------------
-
-       # Default is  pbr2 = pbr21(Lelke,MEDIUM)*elke+ pbr20(Lelke,MEDIUM)  # EVALUATE pbr2 USING pbr2(elke)
+    # --- Inline replace: $ EVALUATE_BHABHA_FRACTION; -----
+    if evaluate_bhabha_fraction:
+        evaluate_bhabha_fraction()
+    else:
+    
+         pbr2 = pbr21[Lelke,MEDIUM]*elke+ pbr20[Lelke,MEDIUM]  # EVALUATE pbr2 USING pbr2(elke)
+    # End inline replace: $ EVALUATE_BHABHA_FRACTION; ----
+       # Default is $ EVALUATE pbr2 USING pbr2(elke) 
     if rnno25 < pbr2:
 
         # It is bhabha
-        IARG = BHABAUSB
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=BHABAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         call bhabha
         # The following macro template allows the user to change the
         # particle selection scheme (e.g., adding importance sampling
         # such as splitting, leading particle selection, etc.).  (default
-        # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
+        # macro is template '$ PARTICLE-SELECTION-ELECTR' which in turn 
         # has the 'null' replacement ';')
-        # --- Inline replace: $PARTICLE_SELECTION_BHABHA; -----
 
-        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
-        if particle_selection_electr:
-            particle_selection_electr()
-        # -------------------------------------------------------------
 
-        # -------------------------------------------------------
-
-        IARG = BHABAUSA
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=BHABAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         if  iq[np] == 0 :
              return
     else:
 
         # It is in-flight annihilation
-        IARG = ANNIHFAUSB
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=ANNIHFAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         call annih
         # The following macro template allows the user to change the
         # particle selection scheme (e.g., adding importance sampling
         # such as splitting, leading particle selection, etc.).  (default
-        # macro is template '$PARTICLE_SELECTION_ELECTR' which in turn
+        # macro is template '$ PARTICLE-SELECTION-ELECTR' which in turn 
         # has the 'null' replacement ';')
-        # --- Inline replace: $PARTICLE_SELECTION_ANNIH; -----
 
-        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
-        if particle_selection_electr:
-            particle_selection_electr()
-        # -------------------------------------------------------------
 
-        # ------------------------------------------------------
-
-        IARG = ANNIHFAUSA
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=ANNIHFAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         EXIT :NEWELECTRON: # i.e., in order to return to shower
         # After annihilation the gammas are bound to be the lowest energy
         # particles, so return and follow them.
@@ -1114,26 +1576,15 @@ return # i.e., return to shower
 # Bremsstrahlung-call section
 # ---------------------------------------------
 :EBREMS:
-IARG = BREMAUSB
-if IAUSFL[IARG + 1] != 0:
-    AUSGAB(IARG)
+IARG=BREMAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
 call brems
 # The following macro template allows the user to change the particle
 # selection scheme (e.g., adding importance sampling such as splitting,
 # leading particle selection, etc.).  (default macro is template
-# '$PARTICLE_SELECTION_ELECTR' which in turn has the 'null' replacement ';')
-# --- Inline replace: $PARTICLE_SELECTION_BREMS; -----
+# '$ PARTICLE-SELECTION-ELECTR' which in turn has the 'null' replacement ';') 
 
-# --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
-if particle_selection_electr:
-    particle_selection_electr()
-# -------------------------------------------------------------
 
-# ------------------------------------------------------
-
-IARG = BREMAUSA
-if IAUSFL[IARG + 1] != 0:
-    AUSGAB(IARG)
+IARG=BREMAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
 if iq[np] == 0:
 
     # Photon was selected.
@@ -1154,20 +1605,17 @@ if  medium > 0 :
 
         idr = EGSCUTAUS
         if lelec < 0:
-            edep = e[np] - prm ELSE[$POSITRON_ECUT_DISCARD;]
+            edep = e[np] - prm ELSE[EDEP=PEIE-PRM;]
     else:
-         idr = PEGSCUTAUS; edep = e[np] - prm;
+         idr = PEGSCUTAUS; edep = e[np] - prm; 
 else:
-    idr = EGSCUTAUS; edep = e[np] - prm;
+    idr = EGSCUTAUS; edep = e[np] - prm; 
 
 
-# --- Inline replace: $ELECTRON_TRACK_END; -----
-; $AUSCALL(idr)
-# ------------------------------------------------
- # The default replacement for this macros is
-                     #           $AUSCALL(idr)
-                     # Use this macro if you wish to modify the
-                     # treatment of track ends
+;IARG=idr ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]  # The default replacement for this macros is 
+                     #           $ AUSCALL(idr)                    
+                     # Use this macro if you wish to modify the   
+                     # treatment of track ends                    
 
 :POSITRON-ANNIHILATION: # NRCC extension 86/9/12
 
@@ -1176,22 +1624,11 @@ if lelec > 0:
     # It's a positron. Produce annihilation gammas if edep < peie
     if edep < peie:
 
-        IARG = ANNIHRAUSB
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=ANNIHRAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         call annih_at_rest
-        # --- Inline replace: $PARTICLE_SELECTION_ANNIHREST; -----
 
-        # --- Inline empty replace: $PARTICLE_SELECTION_ELECTR; -----
-        if particle_selection_electr:
-            particle_selection_electr()
-        # -------------------------------------------------------------
 
-        # ----------------------------------------------------------
-
-        IARG = ANNIHRAUSA
-        if IAUSFL[IARG + 1] != 0:
-            AUSGAB(IARG)
+IARG=ANNIHRAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         # Now discard the positron and take normal return to follow
         # the annihilation gammas.
         return # i.e., return to shower
@@ -1217,9 +1654,7 @@ if (lelec < 0) or (idisc == 99):
 else:
     edep = e[np] + prm;
 
-IARG = USERDAUS
-if IAUSFL[IARG + 1] != 0:
-    AUSGAB(IARG)
+IARG=USERDAUS ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
 
 if idisc == 99:
 
