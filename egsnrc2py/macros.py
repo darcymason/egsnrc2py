@@ -1,7 +1,7 @@
 import re
 from typing import Tuple, List
 from pprint import pprint
-from textwrap import dedent
+import textwrap
 
 from egsnrc2py.util import nested_brace_value, fix_identifiers
 from egsnrc2py.config import (
@@ -36,14 +36,14 @@ logging_replace = {
     '$egs_debug(#,#);': 'logger.debug({P2})',
     '$egs_info(#,#);': 'logger.info({P2})',
     '$egs_warning(#,#);': f"logger.warning('{warning_line}'\n{{P2}}",
-    '$egs_fatal(#,#,#);': dedent(
+    '$egs_fatal(#,#,#);': textwrap.dedent(
         f"""logging.critical('{error_line}')\n
         logging.critical('{{P2}}')\n
         logging.critical('{quit_line}')\n
         sys.exit({{P3}})
         """
     ),
-    '$egs_fatal(#,#);': dedent(
+    '$egs_fatal(#,#);': textwrap.dedent(
         f"""logging.critical('{error_line}')\n
         logging.critical('{{P2}}')\n
         logging.critical('{quit_line}')\n
@@ -67,7 +67,8 @@ func_signatures = {
 # Macros to leave alone or deal with in special functions
 # Set value to None if meant to ignore - match will be put in a Python comment
 complex_macros = {
-    '$DUMP#,#;': None
+    '$DUMP#,#;': None,
+    '$IMPLICIT_NONE': None,
 }
 
 def write_parameters_file(filename) -> None:
@@ -122,8 +123,14 @@ def re_from_to(m_from, m_to) -> Tuple[str, str]:
 
     E.g. Replace '#' with '.*?' and in "to", {P1} etc with the group match num
     """
-    # XXX usefulness is limited due to not replacing indents
+    def sub_P_plus_1(match):
+        r"""Because indent is first in match {P1} -> \g<2>, {P2} -> \g<3> etc"""
+        P_num = int(match.group(1))
+        return f"\\g<{P_num + 1}>"
+
     re_from = re.escape(m_from).replace(r"\#", "(.*?)")
+    indent_pattern = r"(?P<indent> *?)"
+    re_from = indent_pattern + re_from
 
     # Set up replace of {P1} etc if "from" has arguments
     # Some "to"'s (e.g. $CALLTRACE) have REPLACEs inside them,
@@ -131,9 +138,11 @@ def re_from_to(m_from, m_to) -> Tuple[str, str]:
     # These are bracketed like "{WAIT {P1}}"
     re_to = m_to
     # ?<! is a negative look-behind.  Don't match if that text precedes
-    re_to = re.sub(r"(?<!WAIT )\{P(\d*)\}", r"\\g<\1>", re_to)  # {Px} -> \x group replace
+    re_to = re.sub(r"(?<!WAIT )\{P(\d*)\}", sub_P_plus_1, re_to)  # {Px} -> \x group replace
     re_to = re.sub(r"\{WAIT \{ARB\}\}", "#", re_to)
     re_to = re.sub(r"\{WAIT \{P(\d*)\}\}", r"{P\1}", re_to)
+
+    # Note re_to does not have the indent in it - added when replaced
     return re_from, re_to
 
 
@@ -159,34 +168,60 @@ def func_details(name, args:list) -> Tuple[list, list]:
 def eval_using(match):
     # $EVALUATE#USING#(#);
     # Simply use Python f-string replacement to handle the known fixed #s
-    P1, P2, P3 = match.groups()
+    _, P1, P2, P3 = match.groups()  # first match is indent
     if P2.lower().strip() == "sin":
         eval_expr = f"{P1}=sin({P2})"
     elif P2.lower() in 'sinc blc rthr rthri'.split():
         eval_expr = f"{P1}={P2}1[L{P3}]*{P3}+{P2}0[L{P3}]"
     else:
         eval_expr = f"{P1}={P2}1[L{P3},MEDIUM]*{P3}+{P2}0[L{P3},MEDIUM]"
-    return eval_expr + f"  # EVALUATE{P1}USING{P2}({P3})"  # match.group(0) caused inf recursion
+    return add_indent(
+        eval_expr + f"  # EVALUATE{P1}USING{P2}({P3})",  # match.group(0) caused inf recursion
+        match
+    )
+
+def add_indent(text, match):
+    # May also later add, e.g. reformatting if/else blocks not indented yet
+    return textwrap.indent(text, match.group("indent"))
+
+def bracket_function_call(match, macro_from, expansion):
+    pre_comment = match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
+    pre_comment = f"# --- Inline replace: {match_name} -----\n"
+    post_comment = f"\n# End inline replace: {match_name} ----"
+    func_match = re.search(r"(?:\$)?([\w_]+);?(\(.*?#.*?\))?;?", macro_from)
+    func_name = func_match.group(1).lower()
+    args_list = ", ".join(match.groups()[1:]) if match else ""  # '1:' because indent is first
+    args_str = f"({args_list})"
+
+    logger.debug(f"Handling function '{func_name}'")
+    empty_callbacks.add(func_name)
+    fn_check = f"if {func_name}:\n    {func_name}{args_str}"
+    lines = []
+    if expansion.strip().replace(";",""):  # non-empty replace
+        lines = [f"\nelse:"] + [
+            f"    {line}"
+            for line in expansion.splitlines()
+        ]
+    return pre_comment + fn_check + "\n".join(lines) + post_comment
 
 
 def expand_function_call(match, macro_from, re_replace, re_with):
     # XXX for now, do all as inline
-    # indent = match.group(1)
+    indent = match.group("indent")
     func_match = re.search(r"(?:\$)?([\w_]+);?(\(.*?#.*?\))?;?", macro_from)
     func_name = func_match.group(1).lower()
     logger.debug(f"Handling function '{func_name}'")
     empty_callbacks.add(func_name)
-    args_list = ", ".join(match.groups()) if match else ""
+    args_list = ", ".join(match.groups()[1:]) if match else ""  # 1: because indent is first
     args_str = f"({args_list})"
-    indent = "   "  # XXX need proper indent later
 
     repl = match.expand(re_with)
-    fn_check = f"{indent}if {func_name}:\n{indent}    {func_name}{args_str}"
+    fn_check = f"if {func_name}:\n    {func_name}{args_str}"
     lines = []
     if repl.strip().replace(";",""):  # non-empty replace
-        lines = [f"\n{indent}else:"] + [
-            f"{indent}    {line}"
-            for line in dedent(repl).splitlines()
+        lines = [f"\nelse:"] + [
+            f"    {line}"
+            for line in textwrap.dedent(repl).splitlines()
         ]
 
     # Visually bracket the replacement with comments
@@ -194,19 +229,21 @@ def expand_function_call(match, macro_from, re_replace, re_with):
     # the `else:` clause is the "inlined" code
     # remove the '$' and ';' if there so doesn't match in recursive replaces
     match_name = match.group(0).strip().replace("$", "$ ") # so later macros don't replace in the comment
-    pre_comment = f"{indent}# --- Inline replace: {match_name} -----\n"
-    post_comment = f"\n{indent}# End inline replace: {match_name} ----\n"
-    return pre_comment + fn_check + "\n".join(lines) + post_comment
+    pre_comment = f"# --- Inline replace: {match_name} -----\n"
+    post_comment = f"\n# End inline replace: {match_name} ----\n"
 
-
-    post_comment = f"\n{indent}# " + "-" * len(pre_comment.strip()) + "\n"
-
-    return pre_comment + match.expand(re_with) + post_comment
     # XXX do replace for non-inline
     # func_args, return_vars = func_details(macro_from)
 
+    return add_indent(
+        pre_comment + fn_check + "\n".join(lines) + post_comment, match
+    )
 
-def handle_macro_expansion(macro_from, match, re_replace, re_with) -> str:
+
+
+def handle_macro_expansion(
+    macro_from, match, re_replace, re_with
+) -> str:
     if macro_from.startswith(("$COMIN", ";COMIN", "$DEFINE", "$DECLARE")):
         commons[macro_from] = re_with  # keep in case needed later
         # Mangle the name a little so don't replace it in the comment
@@ -215,7 +252,9 @@ def handle_macro_expansion(macro_from, match, re_replace, re_with) -> str:
 
     # Logging/warning/error functions
     if macro_from in logging_replace:
-        return match.expand(logging_replace[macro_from])
+        return add_indent(
+            match.expand(logging_replace[macro_from]), match
+        )
 
     if macro_from.startswith('$EVALUATE#USING'):
         return eval_using(match)
@@ -232,19 +271,25 @@ def handle_macro_expansion(macro_from, match, re_replace, re_with) -> str:
             f"# Complex macro {macro_from} - not replacing "
             "within its replacement"
         )
-        return msg + match.expand(re_with)
+        return add_indent(
+            msg + match.expand(re_with), match
+        )
 
-    # Function calls - any parentheses with an argument are one for sure
+    # Something else, maybe function calls
+    expansion = textwrap.dedent(match.expand(re_with))
+    # recurse into it and apply any other replacements
+    expansion = _parse_and_apply_macros(expansion)
     if (
         re.search(r"\(.*?#.*?\)", macro_from)
         or macro_from.endswith(";")
         or macro_from.lower().startswith("$call_")
     ): # XXX not all that end in ; are calls
-        expansion = match.expand(re_with)
-        expansion = _parse_and_apply_macros(expansion)
+
         if "call " in expansion or " = " in expansion or macro_from.lower().startswith("$call_"):
-            return expand_function_call(match, macro_from, re_replace, re_with)
-    return match.expand(re_with)
+            return bracket_function_call(match, macro_from, expansion)
+        else:
+            return expansion
+    return add_indent(expansion, match)
 
 
 # Note WITH can be followed by a comment before the opening
@@ -282,17 +327,21 @@ def _parse_and_apply_macros(code: str) -> str:
         if expansion_type in NUMBER_TYPES:
             bare_name = match.group(0).replace("$", "").replace(";", "")  # 'from' name without $ or ;
             to_ = re_with.replace(".true.", "True").replace(".false.", "False")
-            parameters[bare_name] = (expansion_type, to_)
+            parameters[bare_name.strip()] = (expansion_type, to_)
             return bare_name  # no need to recurse - know it is a simple #
         else:
-            return handle_macro_expansion(macro_from, match, re_replace, re_with)
+            return handle_macro_expansion(
+                macro_from, match, re_replace, re_with
+            )
 
     i_first = 0
+    no_matches = set()
     while True:
         # Find either a REPLACE...WITH macro
         # or the first match to existing macros, whichever is first
 
-        rev_macros = sorted(macros, key=lambda x: len(x), reverse=True)
+        live_macros = (m for m in macros if m not in no_matches)
+        rev_macros = sorted(live_macros, key=lambda x: len(x), reverse=True)
 
         i_last = i_first  # i_last will be start of last thing we replaced
         i_first = 1e9  # stays there if no match
@@ -301,12 +350,16 @@ def _parse_and_apply_macros(code: str) -> str:
             i_first = repl_match.start()
 
         i_match = None
-        for i, m_from in enumerate(rev_macros):
-            compiled_from = macros[m_from][0]
-            match = compiled_from.search(code)
-            if match and match.start() < i_first:
-                i_first = match.start()
-                i_match = i
+        if code.strip():  # Don't go through everything if nested replace empty
+            for i, m_from in enumerate(rev_macros):
+                compiled_from = macros[m_from][0]
+                match = compiled_from.search(code, pos=i_last)
+                if not match:  # never appears in code, don't search it again
+                    no_matches.add(m_from)
+                    continue
+                if match.start() < i_first:
+                    i_first = match.start()
+                    i_match = i
 
         # Now see what we found
         if i_first == 1e9:  # no match, we're done
@@ -343,10 +396,17 @@ def _parse_and_apply_macros(code: str) -> str:
 
 def apply_macros(macros_code, egs_code):
     # First process macros file; macros will stay in global variable
+    macros.clear()
+    parameters.clear()
+
+    logger.info("Fixing identifiers (no dash or leading numbers)")
     macros_code = fix_identifiers(macros_code)
+    egs_code = fix_identifiers(egs_code)
+
+    logger.info("Parsing macros code")
     macros_code = _parse_and_apply_macros(macros_code)
 
-    egs_code = fix_identifiers(egs_code)
+    logger.info("Parsing egs code")
     egs_code = _parse_and_apply_macros(egs_code)
 
     return macros_code, egs_code
@@ -360,7 +420,7 @@ if __name__ == "__main__":
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
 
-    macros_code = dedent("""REPLACE {PARAMETER #=#;} WITH
+    macros_code = textwrap.dedent("""REPLACE {PARAMETER #=#;} WITH
         { REPLACE {{P1}} WITH {{P2}}}
         PARAMETER $MXXXX=400;     "GAMMA SMALL ENERGY INTERVALS"
         x = $MXXXX;
@@ -371,7 +431,6 @@ if __name__ == "__main__":
     """
     )
 
-    macros = {}
     code = _parse_and_apply_macros(macros_code)
     print("Code\n----\n", code)
     print("# macros:", macros)

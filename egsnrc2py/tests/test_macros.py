@@ -46,9 +46,9 @@ class TestMacroReplace:
             "REPLACE {;{P1}({WAIT {ARB}})={WAIT {ARB}};} WITH "
             "{{EMIT ;{P1}({WAIT {P1}})}={WAIT {P2}};}"
         )
-        expected = (
-            r"REPLACE {;\g<1>(#)=#;} WITH "
-            r"{{EMIT ;\g<1>({P1})}={P2};}"
+        expected = (  # Note, indent is always \g<1>
+            r"REPLACE {;\g<2>(#)=#;} WITH "
+            r"{{EMIT ;\g<2>({P1})}={P2};}"
 
         )
         re_from, re_to = re_from_to(m_from, m_to)
@@ -86,3 +86,17 @@ class TestMacroReplace:
         assert 2 == len(macros)
         assert 'PARAMETER #=#;' in macros
         assert '$MXXXX' in macros
+
+    def test_param_replace(self):
+        macros_code = dedent(
+            """REPLACE {PARAMETER #=#;} WITH
+            { REPLACE {{P1}} WITH {{P2}}}
+
+            PARAMETER $MXMED=10;      "MAX. NO. OF DIFFERENT MEDIA (EXCL. VAC.)"
+            x = $MXMED;
+            """
+        )
+        macros.clear()
+        parameters.clear()
+        code = _parse_and_apply_macros(macros_code)
+        assert "x = MXMED;" in code

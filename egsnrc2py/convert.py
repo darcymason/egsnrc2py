@@ -240,8 +240,15 @@ if __name__ == "__main__":
     callbacks_filename = AUTO_TRANSPILE_PATH / "callbacks.py"
 
 
+    # run_str = "macros_code, egs_code = macros.apply_macros(macros_code, egs_code)"
     # Modify the source code according to what we can do with macros
+    #import cProfile, pstats
+    #cProfile.run(run_str, "macro_parse_stats")
+    #p = pstats.Stats('macro_parse_stats')
+    # p.strip_dirs().sort_stats("cumulative").print_stats(15)
+
     macros_code, egs_code = macros.apply_macros(macros_code, egs_code)
+    print(f"Found {len(macros.macros)} macros")
 
     egs_code = replace_subs(egs_code, main_subs)
     egs_code = replace_particle_vars(egs_code)
