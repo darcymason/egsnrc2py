@@ -32,6 +32,7 @@ main_subs = (
         # Common arrays needing square brackets
         r"(?i)\(irl\)": r"[irl]",  # (irl) region number local variable
         r"(?i)\(medium\)": r"[medium]",  # medium number, often set to med[irl]
+        r"\(lelke,medium\)": "[lelke,medium]",  # common in ELECTR
 
         # Max, min, log sometimes have mixed case - Python needs lowercase
         r"(?i)\bMAX\((.*?)\)": r"max(\1)",

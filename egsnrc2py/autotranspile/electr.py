@@ -281,7 +281,7 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                               [   #  initial and final energy are in different interpolation bins, 
                                   #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke  
                                   #  and add the pre-calculated range from E(lelkef+1) to E(lelke) 
-                                  ekei = E_array(lelke,medium)
+                                  ekei = E_array[lelke,medium]
                                   elkei = (lelke - eke0[medium])/eke1[medium]
                                   # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); -----
                                   if compute_drange:
@@ -370,7 +370,7 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                     #         ===============
                       if  do_range :
 
-                          ekei = E_array(lelke,medium)
+                          ekei = E_array[lelke,medium]
                           elkei = (lelke - eke0[medium])/eke1[medium]
                           # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range); -----
                           if compute_drange:
@@ -593,10 +593,10 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                                   if  lelec < 0 :
 
                                        dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
-                                      aux = ededx1(lelke,medium)/dedxmid
+                                      aux = ededx1[lelke,medium]/dedxmid
                                   else:
                                        dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
-                                      aux = pdedx1(lelke,medium)/dedxmid
+                                      aux = pdedx1[lelke,medium]/dedxmid
 
                                   /*
                                   de = dedxmid*tustep #  Energy loss using stopping power at the beginning 
@@ -1029,10 +1029,10 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                               if  lelec < 0 :
 
                                    dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
-                                  aux = ededx1(lelke,medium)/dedxmid
+                                  aux = ededx1[lelke,medium]/dedxmid
                               else:
                                    dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
-                                  aux = pdedx1(lelke,medium)/dedxmid
+                                  aux = pdedx1[lelke,medium]/dedxmid
 
                               /*
                               de = dedxmid*tvstep #  Energy loss using stopping power at the beginning 
@@ -1123,10 +1123,10 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                                 if  lelec < 0 :
 
                                      dedxmid = ededx1[Lelke,MEDIUM]*elke+ ededx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING ededx(elke)
-                                    aux = ededx1(lelke,medium)/dedxmid
+                                    aux = ededx1[lelke,medium]/dedxmid
                                 else:
                                      dedxmid = pdedx1[Lelke,MEDIUM]*elke+ pdedx0[Lelke,MEDIUM]  # EVALUATE dedxmid USING pdedx(elke)
-                                    aux = pdedx1(lelke,medium)/dedxmid
+                                    aux = pdedx1[lelke,medium]/dedxmid
 
                                 /*
                                 de = dedxmid*tvstep #  Energy loss using stopping power at the beginning 
