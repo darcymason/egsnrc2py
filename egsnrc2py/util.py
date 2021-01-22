@@ -15,6 +15,11 @@ block_subs = {
     # LOOPs
     r"^(\s*):(\w*):LOOP": r"\1while True:  # :\2: LOOP",
     r"^(\s*)\]\s*UNTIL\s*\((.*?)\)(\s*?# .*$)?": r"\1if \2:\n\1    break \3",
+
+    # Goto's and labels `go to :label:` -> goto_label = True \n break
+    r"(?i)( *)go ?to\s*:(.*?):" : r"\1goto_\2 = True\n\1break # XXX",
+    r"^:(.*):": r"if goto_\1:  XXX"  # syntax error so hand-edit flagged
+
 }
 
 main_subs = (
@@ -38,6 +43,7 @@ main_subs = (
         r"(?i)\bMAX\((.*?)\)": r"max(\1)",
         r"(?i)\bMIN\((.*?)\)": r"min(\1)",
         r"(?i)\bLOG\((.*?)\)": r"log(\1)",
+
     }
     | block_subs |  # merge operators for dicts Python 3.9+
     {
@@ -116,6 +122,13 @@ def fix_identifiers(code) -> str:
         pattern = r"\$" + "-".join([r"(\w*)"]*i)
         subst = r"$" + "_".join([rf"\{j}" for j in range(1, i+1)])
         code = re.sub(pattern, subst, code)
+
+    # Change dashes in goto labels to underscore - leave colons for now
+    for i in range(8, 1, -1):  # up to 7 dashes
+        pattern = r":" + "-".join([r"(\w*)"]*i) + ":"
+        subst = r":" + "_".join([rf"\{j}" for j in range(1, i+1)]) + ":"
+        code = re.sub(pattern, subst, code)
+
 
     # Fix leading number, often used for ranges
     code = re.sub(r"\$(\d)(\w*?)", r"$from\1\2", code)

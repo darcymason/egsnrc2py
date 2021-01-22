@@ -84,7 +84,8 @@ while True:  # :NEWELECTRON: LOOP
 
     if eie <= ecut[irl]:
 
-        go to :ECUT-DISCARD:
+        goto_ECUT_DISCARD = True
+        break # XXX
         # (Ecut is the lower transport threshold.)
 
     # medium = med[irl] # (This renders the above assignment redundant!)
@@ -92,7 +93,8 @@ while True:  # :NEWELECTRON: LOOP
 
     if wt[np] == 0.0:
 
-        go to :USER-ELECTRON-DISCARD: # added May 01
+        goto_USER_ELECTRON_DISCARD = True
+        break # XXX # added May 01
 
     while True:  # :TSTEP: LOOP
 
@@ -476,7 +478,8 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                         if tperp >= range:
                              [# particle cannot escape local region
                             idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
-                            go to :USER-ELECTRON-DISCARD: 
+                            goto_USER_ELECTRON_DISCARD = True
+                            break # XXX 
 
 
                 # End inline replace: $ RANGE_DISCARD; ----       # optional regional range rejection for
@@ -820,7 +823,8 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
             if idisc > 0) # (idisc is returned by howfar:
 
                 # User requested immediate discard
-                go to :USER-ELECTRON-DISCARD:
+                goto_USER_ELECTRON_DISCARD = True
+                break # XXX
 
             # --- Inline replace: $ CHECK_NEGATIVE_USTEP; -----
             if check_negative_ustep:
@@ -903,9 +907,11 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
                     CALL AUSGAB(IARG)]
                 if eie <= ecut[irl]:
-                    go to :ECUT-DISCARD:
+                    goto_ECUT_DISCARD = True
+                    break # XXX
                 if ustep != 0 and idisc < 0:
-                    go to :USER-ELECTRON-DISCARD:
+                    goto_USER_ELECTRON_DISCARD = True
+                    break # XXX
                 NEXT :TSTEP:  # (Start again at :TSTEP:)
 
             ] # Go try another big step in (possibly) new medium
@@ -1343,7 +1349,8 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             #     is very likely.      Jan 27 2004 
             if  irnew == irl and eie <= ecut[irl]:
 
-               go to :ECUT-DISCARD:
+               goto_ECUT_DISCARD = True
+               break # XXX
 
             medold = medium
             if medium != 0:
@@ -1367,13 +1374,15 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
             if eie <= ecut[irl]:
 
-               go to :ECUT-DISCARD:
+               goto_ECUT_DISCARD = True
+               break # XXX
 
             # Now check for deferred discard request.  May have been set
             # by either howfar, or one of the transport ausgab calls
             if idisc < 0:
 
-              go to :USER-ELECTRON-DISCARD:
+              goto_USER_ELECTRON_DISCARD = True
+              break # XXX
 
             if medium != medold:
 
@@ -1469,7 +1478,8 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         if rnno24 <= ebr1:
 
             # It was bremsstrahlung
-            go to :EBREMS:
+            goto_EBREMS = True
+            break # XXX
         else:
 
             # It was Moller, but first check the kinematics.
@@ -1483,9 +1493,11 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                 # Not enough energy for Moller, so
                 # force it to be a bremsstrahlung---provided ok kinematically.
                 if ebr1 <= 0:
-                    go to :NEWELECTRON:
+                    goto_NEWELECTRON = True
+                    break # XXX
                     # Brems not allowed either.
-                go to :EBREMS:
+                goto_EBREMS = True
+                break # XXX
 
 IARG=MOLLAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             call moller
@@ -1499,7 +1511,8 @@ IARG=MOLLAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             if  iq[np] == 0 :
                  return
 
-        go to :NEWELECTRON: # Electron is lowest energy-follow it
+        goto_NEWELECTRON = True
+        break # XXX # Electron is lowest energy-follow it
 
     # e+ interaction. pbr1 = brems/(brems + bhabha + annih
     # --- Inline replace: $ EVALUATE_PBREM_FRACTION; -----
@@ -1524,7 +1537,8 @@ IARG=MOLLAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         
     # End inline replace: $ RANDOMSET rnno25; ----
     if rnno25 < pbr1:
-        go to :EBREMS: # It was bremsstrahlung
+        goto_EBREMS = True
+        break # XXX # It was bremsstrahlung
     # Decide between bhabha and annihilation
     # pbr2 is (brems + bhabha)/(brems + bhabha + annih)
     # --- Inline replace: $ EVALUATE_BHABHA_FRACTION; -----
@@ -1574,7 +1588,7 @@ return # i.e., return to shower
 # ---------------------------------------------
 # Bremsstrahlung-call section
 # ---------------------------------------------
-:EBREMS:
+if goto_EBREMS:  XXX
 IARG=BREMAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 call brems
 # The following macro template allows the user to change the particle
@@ -1592,12 +1606,13 @@ if iq[np] == 0:
 else:
 
     # Electron was selected
-    go to :NEWELECTRON:
+    goto_NEWELECTRON = True
+    break # XXX
 
 # ---------------------------------------------
 # Electron cutoff energy discard section
 # ---------------------------------------------
-:ECUT-DISCARD:
+if goto_ECUT_DISCARD:  XXX
 if  medium > 0 :
 
     if eie > ae[medium]:
@@ -1616,7 +1631,7 @@ else:
                      # Use this macro if you wish to modify the   
                      # treatment of track ends                    
 
-:POSITRON-ANNIHILATION: # NRCC extension 86/9/12
+if goto_POSITRON_ANNIHILATION:  XXX # NRCC extension 86/9/12
 
 if lelec > 0:
 
@@ -1643,7 +1658,7 @@ return # i.e., return to shower
 # ---------------------------------------------
 # User requested electron discard section
 # ---------------------------------------------
-:USER-ELECTRON-DISCARD:
+if goto_USER_ELECTRON_DISCARD:  XXX
 
 idisc = abs(idisc)
 
@@ -1657,7 +1672,8 @@ IARG=USERDAUS ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
 if idisc == 99:
 
-     goto :POSITRON-ANNIHILATION:
+     goto_POSITRON_ANNIHILATION = True
+     break # XXX
 
 np = np - 1; ircode = 2
 
