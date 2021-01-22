@@ -11,65 +11,14 @@ from egsnrc2py.config import (
     MORTRAN_SOURCE_PATH, AUTO_TRANSPILE_PATH, TEMPLATES_PATH,
     REAL, ENERGY_PRECISION, INTEGER, LOGICAL
 )
-from egsnrc2py.util import fix_identifiers
+from egsnrc2py.util import fix_identifiers, replace_subs, main_subs
 
 
-if sys.version_info < (3, 8):
-    raise ImportError("Need Python 3.8 or later")
+if sys.version_info < (3, 9):
+    raise ImportError("Need Python 3.9 or later")
 
 # XXX needs to be OrderedDict!!
-main_subs = {
-    # Comments / semicolons
-    r'"(.*?)"': r'# \1',  # comments in quotes
-    r'"(.*)': r'# \1',  # comment without end quote
-    r";(\s*)$": r"\1",      # semi-colon at end of line
-    r";(\s*)(?P<comment>#(.*?))?$": r" \g<comment>", # still a semicolon before #
 
-    # Compiler directives
-    r"^%(.*?)$": r"# %\1",  # Any line starting with %
-    r"^!(.*?)$": r"# !\1",  # Any line starting with !
-
-    # IF/ELSE
-    r"^(\s*)IF\((.*)\)\s*?\[(.*?)[;]?\](.*?)$": r"\1if \2:\n\1    \3\4", # basic IF
-    r"^(\s*)(?:]\s*)?ELSE(.*?)?\[(.*)\](.*?)$": r"\1else:\n\1    \3\4", # basic ELSE [ ]
-    r"^(\s*)(?:]\s*)?ELSE(\s*?)?\[?.*?$": r"\1else:",  # bare ELSE line or ELSE [
-    r"^(\s*)IF(\s*)?\((.*)\)(.*)$": r"\1if \3:\n\1    \4", # IF on one line
-
-    # LOOPs
-    r"^(\s*):(\w*):LOOP": r"\1while True:  # :\2: LOOP",
-    r"^(\s*)\]\s*UNTIL\s*\((.*?)\)(\s*?# .*$)?": r"\1if \2:\n\1    break \3",
-
-
-    # Math operators
-    r"if(.*?)~=": r"if\1!=", # not equals
-    r"if(.*?) = ": r"if\1 == ", # = to ==
-    r"if(.*?) = ": r"if\1 == ", # = to == again if there multiple times
-    r"if(.*?) = ": r"if\1 == ", # = to == again
-
-    # Booleans
-    r" \| ": r" or ",
-    r" \& ": r" and ",
-
-    # Leftover brackets
-    r"^\s*\[\s*$": r"",  # line with only [
-    r"^\s*\]\s*$": r"",  # line with only ]
-
-
-    # r"\$electron_region_change|\$photon_region_change": r"ir(np) = irnew; irl = irnew; medium = med(irl)",
-    # r"\$declare_max_medium": r"",
-    r"\$default_nmed": "1",
-    # r"\$INIT-PEGS4-VARIABLES": "",
-    # r"\$DECLARE-PEGS4-COMMON-BLOCKS": "",
-    r"SUBROUTINE\s*(.*)$": r"def \1:",
-    r"\.true\.": "True",
-    r"\.false\.": "False",
-    r"[iI]f(.*?)(?:=)?=\s*True": r"if\1 is True",
-    r"[iI]f(.*?)(?:=)?=\s*False": r"if\1 is False",
-    r"\$IMPLICIT_NONE": r"",
-    r"\$DEFINE_LOCAL_VARIABLES_ELECTR": r"# $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?",
-
-
-}
 
 call_subs= {
     # paired with added funcs
@@ -100,10 +49,7 @@ commenting_lines = [
 
 ]
 
-def replace_subs(code: str, subs: dict) -> str:
-    for pattern, sub in subs.items():
-        code = re.sub(pattern, sub, code, flags=re.MULTILINE)
-    return code
+
 
 
 def comment_out_lines(code: str, lines_to_comment: list) -> str:

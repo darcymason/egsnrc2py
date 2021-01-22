@@ -3,7 +3,7 @@ from typing import Tuple, List
 from pprint import pprint
 import textwrap
 
-from egsnrc2py.util import nested_brace_value, fix_identifiers
+from egsnrc2py.util import nested_brace_value, fix_identifiers, block_subs, replace_subs
 from egsnrc2py.config import (
     default_float, AUTO_TRANSPILE_PATH, MORTRAN_SOURCE_PATH,
     INTEGER, REAL, LOGICAL
@@ -72,6 +72,7 @@ complex_macros = {
     '$IMPLICIT_NONE': None,
     '$SET INTERVAL#,#;': None,  # is SET INTERVAL#,SINC in .macros, but nothing in Fortran
 }
+
 
 def write_parameters_file(filename) -> None:
     with open(filename, "w") as f:
@@ -159,7 +160,7 @@ def func_details(name, args:list) -> Tuple[list, list]:
             for out in func_outputs
         ]
     else:
-        func_args = [f"arg{i}" for i in range(len(args))]
+        func_args = args
         if func_args:
             return_vars = ["<XXX>"]  # will be syntax error, forcing hand-edit
         else:
@@ -250,6 +251,10 @@ def handle_macro_expansion(
 
     # Something else, maybe function calls
     expansion = textwrap.dedent(match.expand(re_with))
+
+    # Separate out lines in IF or loop blocks
+    expansion = replace_subs(expansion, block_subs)
+
     # recurse into it and apply any other replacements
     expansion = _parse_and_apply_macros(expansion)
     if (

@@ -4,6 +4,71 @@ from typing import Tuple
 from pprint import pprint
 from textwrap import dedent
 
+
+block_subs = {
+    # IF/ELSE
+    r"^(\s*)IF\((.*)\)\s*?\[(.*?)[;]?\](.*?)$": r"\1if \2:\n\1    \3\4", # basic IF
+    r"^(\s*)(?:]\s*)?ELSE(.*?)?\[(.*)\](.*?)$": r"\1else:\n\1    \3\4", # basic ELSE [ ]
+    r"^(\s*)(?:]\s*)?ELSE(\s*?)?\[?.*?$": r"\1else:",  # bare ELSE line or ELSE [
+    r"^(\s*)IF(\s*)?\((.*)\)(.*)$": r"\1if \3:\n\1    \4", # IF on one line
+
+    # LOOPs
+    r"^(\s*):(\w*):LOOP": r"\1while True:  # :\2: LOOP",
+    r"^(\s*)\]\s*UNTIL\s*\((.*?)\)(\s*?# .*$)?": r"\1if \2:\n\1    break \3",
+}
+
+main_subs = (
+    {
+        # Comments / semicolons
+        r'"(.*?)"': r'# \1',  # comments in quotes
+        r'"(.*)': r'# \1',  # comment without end quote
+        r";(\s*)$": r"\1",      # semi-colon at end of line
+        r";(\s*)(?P<comment>#(.*?))?$": r" \g<comment>", # still a semicolon before #
+
+        # Compiler directives
+        r"^%(.*?)$": r"# %\1",  # Any line starting with %
+        r"^!(.*?)$": r"# !\1",  # Any line starting with !
+    }
+    | block_subs |  # merge operators for dicts Python 3.9+
+    {
+        # Math operators
+        r"if(.*?)~=": r"if\1!=", # not equals
+        r"if(.*?).NE.": r"if\1 != ", # old-style fortran not equals
+        r"if(.*?) = ": r"if\1 == ", # = to ==
+        r"if(.*?) = ": r"if\1 == ", # = to == again if there multiple times
+        r"if(.*?) = ": r"if\1 == ", # = to == again
+
+        # Booleans
+        r" \| ": r" or ",
+        r" \& ": r" and ",
+
+        # Leftover brackets
+        r"^\s*\[\s*$": r"",  # line with only [
+        r"^\s*\]\s*$": r"",  # line with only ]
+
+
+        # r"\$electron_region_change|\$photon_region_change": r"ir(np) = irnew; irl = irnew; medium = med(irl)",
+        # r"\$declare_max_medium": r"",
+        r"\$default_nmed": "1",
+        # r"\$INIT-PEGS4-VARIABLES": "",
+        # r"\$DECLARE-PEGS4-COMMON-BLOCKS": "",
+        r"SUBROUTINE\s*(.*)$": r"def \1:",
+        r"\.true\.": "True",
+        r"\.false\.": "False",
+        r"[iI]f(.*?)(?:=)?=\s*True": r"if\1 is True",
+        r"[iI]f(.*?)(?:=)?=\s*False": r"if\1 is False",
+        r"\$IMPLICIT_NONE": r"",
+        r"\$DEFINE_LOCAL_VARIABLES_ELECTR": r"# $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?",
+
+    }
+)
+
+
+def replace_subs(code: str, subs: dict) -> str:
+    for pattern, sub in subs.items():
+        code = re.sub(pattern, sub, code, flags=re.MULTILINE)
+    return code
+
 # def evaluate_using(P1, P2, P3):
 #     if P2 == SNAME1:
 #         P1=P2}1(L{P3})*{P3}+{P2}0(L{P3})

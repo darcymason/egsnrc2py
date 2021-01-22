@@ -165,7 +165,7 @@ while True:  # :NEWELECTRON: LOOP
                        if  lelec < 0 :
                            sig0 = esig_e(medium)
                        else:
-                           sig0 = psig_e(medium);
+                           sig0 = psig_e(medium)
 
             # End inline replace: $ EVALUATE_SIG0; ----
                # The fix up of the fictitious method uses cross section per
@@ -244,13 +244,13 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                             total_de = demfp/sig; fedep = total_de
                             ekef  = eke - fedep
                             if  ekef <= E_array(1,medium) :
-                                 tstep = vacdst; 
+                                 tstep = vacdst 
                             else:
 
                               elkef = Log(ekef)
                               # Unhandled macro '$ SET INTERVAL elkef,eke;'
                               if  lelkef == lelke :
-                                  
+              
                               [       #  initial and final energy are in the same interpolation bin 
                                   # --- Inline replace: $ COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep); -----
                                   if compute_drange:
@@ -433,7 +433,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
 
                 # --- Inline replace: $ CALL_HOWNEAR(tperp); -----
                 if call_hownear:
-                    <XXX> = call_hownear(arg0)
+                    <XXX> = call_hownear(tperp)
                 else:
     
                     OUTPUT 35 # 35 in decimal is ascii code for the pound sign
@@ -486,12 +486,12 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
 
                 # --- Inline replace: $ SET_SKINDEPTH(eke,elke); -----
                 if set_skindepth:
-                    <XXX> = set_skindepth(arg0, arg1)
+                    <XXX> = set_skindepth(eke, elke)
                 else:
     
                     # --- Inline replace: $ CALCULATE_ELASTIC_SCATTERING_MFP(ssmfp,eke,elke); -----
                     if calculate_elastic_scattering_mfp:
-                        <XXX> = calculate_elastic_scattering_mfp(arg0, arg1, arg2)
+                        <XXX> = calculate_elastic_scattering_mfp(ssmfp, eke, elke)
                     else:
         
                         blccl = rhof*blcc(medium)
@@ -500,7 +500,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                         if  spin_effects :
 
                           if lelec < 0:
-                                etap = etae_ms1[Lelke,MEDIUM*elke+ etae_ms0[Lelke,MEDIUM]  # EVALUATE etap USING etae_ms(elke) ]
+                                etap = etae_ms1[Lelke,MEDIUM]*elke+ etae_ms0[Lelke,MEDIUM]  # EVALUATE etap USING etae_ms(elke) 
                           else:
                                 etap = etap_ms1[Lelke,MEDIUM]*elke+ etap_ms0[Lelke,MEDIUM]  # EVALUATE etap USING etap_ms(elke) 
                            ms_corr = blcce1[Lelke,MEDIUM]*elke+ blcce0[Lelke,MEDIUM]  # EVALUATE ms_corr USING blcce(elke)
@@ -577,7 +577,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                     # Fourth order technique for de
                     # --- Inline replace: $ COMPUTE_ELOSS_G(tustep,eke,elke,lelke,de); -----
                     if compute_eloss_g:
-                        <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                        <XXX> = compute_eloss_g(tustep, eke, elke, lelke, de)
                     else:
     
                         tuss = range - range_ep(qel,lelke,medium)/rhof
@@ -587,7 +587,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                              [  #  Final energy is in the same interpolation bin 
                             # --- Inline replace: $ COMPUTE_ELOSS(tustep,eke,elke,lelke,de); -----
                             if compute_eloss:
-                                <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                                <XXX> = compute_eloss(tustep, eke, elke, lelke, de)
                             else:
                                 
                                   if  lelec < 0 :
@@ -618,7 +618,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                #  now tuss is the range of the final energy electron 
                                #  scaled to the default mass density from PEGS4      
                             if  tuss <= 0 :
-                                 de = eke - TE(medium)*0.99; 
+                                 de = eke - TE(medium)*0.99 
                               #  i.e., if the step we intend to take is longer than the particle 
                               #  range, the particle energy goes down to the threshold 
                               # (eke is the initial particle energy)  
@@ -635,7 +635,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                 tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
                                 # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
                                 if compute_eloss:
-                                    <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                                    <XXX> = compute_eloss(tuss, eketmp, elktmp, lelktmp, de)
                                 else:
                                     
                                       if  lelec < 0 :
@@ -753,7 +753,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                                             # energy dependent quantities
                             # --- Inline replace: $ CALCULATE_XI(tustep); -----
                             if calculate_xi:
-                                <XXX> = calculate_xi(arg0)
+                                <XXX> = calculate_xi(tustep)
                             else:
         
                                 p2 = ekems*(ekems+rmt2); beta2 = p2/(p2 + rmsq)
@@ -777,7 +777,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                      ms_corr = blcce1[Lelkems,MEDIUM]*elkems+ blcce0[Lelkems,MEDIUM]  # EVALUATE ms_corr USING blcce(elkems)
                                     blccl = blccl*ms_corr
                                 else:
-                                     xi_corr = 1; etap = 1; 
+                                     xi_corr = 1; etap = 1 
                                 xi = xi*(Log(1+1./chia2)-1/(1+chia2))
                             # End inline replace: $ CALCULATE_XI(tustep); ----
                             if  xi < 0.1 :
@@ -813,8 +813,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
             else:
                 
                   if callhowfar or wt[np] <= 0:
-                
-                       call howfar; 
+                       call howfar 
             # End inline replace: $ CALL_HOWFAR_IN_ELECTR; ---- # The above is the default replacement
 
             # Now see if user requested discard
@@ -900,7 +899,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
      ir[np] = irnew; irl = irnew; medium = med(irl)
  # End inline replace: $ electron_region_change; ---- ]
 
-                if ustep != 0) [IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0:
+                if ustep != 0) [IARG=TRANAUSA ;  IF (IAUSFL(IARG+1) != 0:
 
                     CALL AUSGAB(IARG)]
                 if eie <= ecut(irl):
@@ -947,7 +946,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                              #               initial direction due to boundary crossing
                           # --- Inline replace: $ CALCULATE_XI(vstep); -----
                           if calculate_xi:
-                              <XXX> = calculate_xi(arg0)
+                              <XXX> = calculate_xi(vstep)
                           else:
         
                               p2 = ekems*(ekems+rmt2); beta2 = p2/(p2 + rmsq)
@@ -971,7 +970,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                                    ms_corr = blcce1[Lelkems,MEDIUM]*elkems+ blcce0[Lelkems,MEDIUM]  # EVALUATE ms_corr USING blcce(elkems)
                                   blccl = blccl*ms_corr
                               else:
-                                   xi_corr = 1; etap = 1; 
+                                   xi_corr = 1; etap = 1 
                               xi = xi*(Log(1+1./chia2)-1/(1+chia2))
                           # End inline replace: $ CALCULATE_XI(vstep); ----
                           if  xi < 0.1 :
@@ -1014,7 +1013,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                 # single scattering step.
                 # --- Inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); -----
                 if compute_eloss_g:
-                    <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                    <XXX> = compute_eloss_g(tvstep, eke, elke, lelke, de)
                 else:
     
                     tuss = range - range_ep(qel,lelke,medium)/rhof
@@ -1024,7 +1023,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                          [  #  Final energy is in the same interpolation bin 
                         # --- Inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); -----
                         if compute_eloss:
-                            <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                            <XXX> = compute_eloss(tvstep, eke, elke, lelke, de)
                         else:
                             
                               if  lelec < 0 :
@@ -1055,7 +1054,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                            #  now tuss is the range of the final energy electron 
                            #  scaled to the default mass density from PEGS4      
                         if  tuss <= 0 :
-                             de = eke - TE(medium)*0.99; 
+                             de = eke - TE(medium)*0.99 
                           #  i.e., if the step we intend to take is longer than the particle 
                           #  range, the particle energy goes down to the threshold 
                           # (eke is the initial particle energy)  
@@ -1072,7 +1071,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                             tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
                             # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
                             if compute_eloss:
-                                <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                                <XXX> = compute_eloss(tuss, eketmp, elktmp, lelktmp, de)
                             else:
                                 
                                   if  lelec < 0 :
@@ -1108,7 +1107,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                   # Already done in a normal CH step with call to msdist
                   # --- Inline replace: $ COMPUTE_ELOSS_G(tvstep,eke,elke,lelke,de); -----
                   if compute_eloss_g:
-                      <XXX> = compute_eloss_g(arg0, arg1, arg2, arg3, arg4)
+                      <XXX> = compute_eloss_g(tvstep, eke, elke, lelke, de)
                   else:
     
                       tuss = range - range_ep(qel,lelke,medium)/rhof
@@ -1118,7 +1117,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                            [  #  Final energy is in the same interpolation bin 
                           # --- Inline replace: $ COMPUTE_ELOSS(tvstep,eke,elke,lelke,de); -----
                           if compute_eloss:
-                              <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                              <XXX> = compute_eloss(tvstep, eke, elke, lelke, de)
                           else:
                               
                                 if  lelec < 0 :
@@ -1149,7 +1148,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                              #  now tuss is the range of the final energy electron 
                              #  scaled to the default mass density from PEGS4      
                           if  tuss <= 0 :
-                               de = eke - TE(medium)*0.99; 
+                               de = eke - TE(medium)*0.99 
                             #  i.e., if the step we intend to take is longer than the particle 
                             #  range, the particle energy goes down to the threshold 
                             # (eke is the initial particle energy)  
@@ -1166,7 +1165,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                               tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof
                               # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
                               if compute_eloss:
-                                  <XXX> = compute_eloss(arg0, arg1, arg2, arg3, arg4)
+                                  <XXX> = compute_eloss(tuss, eketmp, elktmp, lelktmp, de)
                               else:
                                   
                                     if  lelec < 0 :
@@ -1392,7 +1391,7 @@ IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                 total_de = total_de - save_de
                 total_tstep = total_tstep - tvstep*rhof
                 if  total_tstep < 1e-9 :
-                     demfp = 0; 
+                     demfp = 0 
             # End inline replace: $ UPDATE_DEMFP; ----
 
         if demfp < EPSEMFP:
