@@ -65,9 +65,9 @@ irl    = irold # region number in local variable
 if start_new_particle:
     start_new_particle()
 else:
-    medium = med(irl) 
+    medium = med[irl] 
 # End inline replace: $ start_new_particle; ----
-#  Default replacement for the above is medium = med(irl) 
+#  Default replacement for the above is medium = med[irl] 
 #  This is made a macro so that it can be replaced with a call to a 
 #  user provided function start_new_particle(); for the C/C++ interface 
 
@@ -82,12 +82,12 @@ while True:  # :NEWELECTRON: LOOP
     peie  = e[np] # precise energy of incident electron (double precision)
     eie   = peie # energy incident electron (conversion to single)
 
-    if eie <= ecut(irl):
+    if eie <= ecut[irl]:
 
         go to :ECUT-DISCARD:
         # (Ecut is the lower transport threshold.)
 
-    # medium = med(irl) # (This renders the above assignment redundant!)
+    # medium = med[irl] # (This renders the above assignment redundant!)
     # The above assignment is unnecessary, IK, June 2003
 
     if wt[np] == 0.0:
@@ -126,7 +126,7 @@ while True:  # :NEWELECTRON: LOOP
                       rng_seed = rng_seed + 1
                     
                 # End inline replace: $ RANDOMSET RNNE1; ---- if(RNNE1 == 0.0) [RNNE1=1.E-30;]
-                 DEMFP=MAX(-LOG(RNNE1),EPSEMFP)
+                 DEMFP=max(-log(RNNE1),EPSEMFP)
             # End inline replace: $ SELECT_ELECTRON_MFP; ----
                 #  Default FOR $ SELECT-ELECTRON-MFP; is: $ RANDOMSET rnne1
                 #                                        demfp = -log(rnne1)
@@ -163,9 +163,9 @@ while True:  # :NEWELECTRON: LOOP
                        # End inline replace: $ EVALUATE_SIGF; ---- sig0 = sigf
                    else:
                        if  lelec < 0 :
-                           sig0 = esig_e(medium)
+                           sig0 = esig_e[medium]
                        else:
-                           sig0 = psig_e(medium)
+                           sig0 = psig_e[medium]
 
             # End inline replace: $ EVALUATE_SIG0; ----
                # The fix up of the fictitious method uses cross section per
@@ -205,7 +205,7 @@ while True:  # :NEWELECTRON: LOOP
             else:
 
                 # non-vacuum
-RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
+RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                               # EGS allows the density to vary
                               # continuously (user option)
 
@@ -247,7 +247,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                  tstep = vacdst 
                             else:
 
-                              elkef = Log(ekef)
+                              elkef = log(ekef)
                               # Unhandled macro '$ SET INTERVAL elkef,eke;'
                               if  lelkef == lelke :
               
@@ -282,7 +282,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                   #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke  
                                   #  and add the pre-calculated range from E(lelkef+1) to E(lelke) 
                                   ekei = E_array(lelke,medium)
-                                  elkei = (lelke - eke0(medium))/eke1(medium)
+                                  elkei = (lelke - eke0[medium])/eke1[medium]
                                   # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); -----
                                   if compute_drange:
                                       tuss = compute_drange(eke1, eke2, lelke1, elke1, elke2)
@@ -309,7 +309,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                       tuss = fedep*eke*dedxmid*(1+aux)
                                   # End inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); ----
                                   ekei = E_array(lelkef+1,medium)
-                                  elkei = (lelkef + 1 - eke0(medium))/eke1(medium)
+                                  elkei = (lelkef + 1 - eke0[medium])/eke1[medium]
                                   # --- Inline replace: $ COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep); -----
                                   if compute_drange:
                                       tstep = compute_drange(eke1, eke2, lelke1, elke1, elke2)
@@ -357,7 +357,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                  tmxs = tmxs1[Lelke,MEDIUM]*elke+ tmxs0[Lelke,MEDIUM]  # EVALUATE tmxs USING tmxs(elke)
                 tmxs = tmxs/rhof
 
-                # Compute the range to E_min(medium) (e_min is the first
+                # Compute the range to E_min[medium] (e_min is the first
                 # energy in the table). Do not go more than range.
                 # Don't replace this macro and don't override range, because
                 # the energy loss evaluation below relies on the accurate
@@ -371,7 +371,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                       if  do_range :
 
                           ekei = E_array(lelke,medium)
-                          elkei = (lelke - eke0(medium))/eke1(medium)
+                          elkei = (lelke - eke0[medium])/eke1[medium]
                           # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,range); -----
                           if compute_drange:
                               range = compute_drange(eke1, eke2, lelke1, elke1, elke2)
@@ -423,10 +423,10 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                           rng_seed = rng_seed + 1
                         
                     # End inline replace: $ RANDOMSET rnnotu; ----
-                    tmxs = rnnotu*min(tmxs,smaxir(irl))
+                    tmxs = rnnotu*min(tmxs,smaxir[irl])
                 else:
 
-                    tmxs = min(tmxs,smaxir(irl))
+                    tmxs = min(tmxs,smaxir[irl])
 
                 tustep = min(tstep,tmxs,range)
  # optional tustep restriction in EM field
@@ -472,7 +472,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                     range_discard()
                 else:
     
-                    ;if( i_do_rr(irl) == 1 and e[np] < e_max_rr(irl) ) [
+                    ;if( i_do_rr[irl] == 1 and e[np] < e_max_rr[irl] ) [
                         if tperp >= range:
                              [# particle cannot escape local region
                             idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
@@ -494,8 +494,8 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                         <XXX> = calculate_elastic_scattering_mfp(ssmfp, eke, elke)
                     else:
         
-                        blccl = rhof*blcc(medium)
-                        xccl  = rhof*xcc(medium)
+                        blccl = rhof*blcc[medium]
+                        xccl  = rhof*xcc[medium]
                         p2 = eke*(eke+rmt2); beta2 = p2/(p2 + rmsq)
                         if  spin_effects :
 
@@ -618,7 +618,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                #  now tuss is the range of the final energy electron 
                                #  scaled to the default mass density from PEGS4      
                             if  tuss <= 0 :
-                                 de = eke - TE(medium)*0.99 
+                                 de = eke - TE[medium]*0.99 
                               #  i.e., if the step we intend to take is longer than the particle 
                               #  range, the particle energy goes down to the threshold 
                               # (eke is the initial particle energy)  
@@ -627,7 +627,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                             else:
                                 WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
                                     lelktmp = lelktmp - 1; ]
-                                elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                                elktmp = (lelktmp+1-eke0[medium])/eke1[medium]
                                 eketmp = E_array(lelktmp+1,medium)
                                 # tuss = range_ep(qel,lelktmp+1,medium) - tuss
                                 # IK: rhof scaling bug, June 9 2006: because of the change in 
@@ -712,7 +712,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
 
                             rnnoss = 1.e-30
 
-                        lambda_ = - Log(1 - rnnoss)
+                        lambda_ = - log(1 - rnnoss)
                         lambda_max = 0.5*blccl*rm/dedx*(eke/rm+1)**3
                         if  lambda_ >= 0 and lambda_max > 0 :
 
@@ -732,7 +732,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                         else:
                           $egs_warning(*,' lambda_ > lambda_max: ',
                              lambda_,lambda_max,' eke dedx: ',eke,dedx,
-                             ' ir medium blcc: ',ir[np],medium,blcc(medium),
+                             ' ir medium blcc: ',ir[np],medium,blcc[medium],
                              ' position = ',x[np],y[np],z[np])
                           dosingle = False
                           np=np-1; return
@@ -763,7 +763,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                 xi = 0.5*xccl/p2/beta2*tustep
                                 if  spin_effects :
 
-                                    elkems = Log(ekems)
+                                    elkems = log(ekems)
                                     # Unhandled macro '$ SET INTERVAL elkems,eke;'
                                     if lelec < 0:
 
@@ -778,7 +778,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                                     blccl = blccl*ms_corr
                                 else:
                                      xi_corr = 1; etap = 1 
-                                xi = xi*(Log(1+1./chia2)-1/(1+chia2))
+                                xi = xi*(log(1+1./chia2)-1/(1+chia2))
                             # End inline replace: $ CALCULATE_XI(tustep); ----
                             if  xi < 0.1 :
 
@@ -896,13 +896,13 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
      electron_region_change()
  else:
     
-     ir[np] = irnew; irl = irnew; medium = med(irl)
+     ir[np] = irnew; irl = irnew; medium = med[irl]
  # End inline replace: $ electron_region_change; ---- ]
 
                 if ustep != 0) [IARG=TRANAUSA ;  IF (IAUSFL(IARG+1) != 0:
 
                     CALL AUSGAB(IARG)]
-                if eie <= ecut(irl):
+                if eie <= ecut[irl]:
                     go to :ECUT-DISCARD:
                 if ustep != 0 and idisc < 0:
                     go to :USER-ELECTRON-DISCARD:
@@ -956,7 +956,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                               xi = 0.5*xccl/p2/beta2*vstep
                               if  spin_effects :
 
-                                  elkems = Log(ekems)
+                                  elkems = log(ekems)
                                   # Unhandled macro '$ SET INTERVAL elkems,eke;'
                                   if lelec < 0:
 
@@ -971,7 +971,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                                   blccl = blccl*ms_corr
                               else:
                                    xi_corr = 1; etap = 1 
-                              xi = xi*(Log(1+1./chia2)-1/(1+chia2))
+                              xi = xi*(log(1+1./chia2)-1/(1+chia2))
                           # End inline replace: $ CALCULATE_XI(vstep); ----
                           if  xi < 0.1 :
 
@@ -980,7 +980,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
                             if  xi < 0.999999 :
 
-                               tvstep = -vstep*Log(1 - xi)/xi
+                               tvstep = -vstep*log(1 - xi)/xi
                             else:
 
                                # This is an error condition because the average transition 
@@ -1054,7 +1054,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                            #  now tuss is the range of the final energy electron 
                            #  scaled to the default mass density from PEGS4      
                         if  tuss <= 0 :
-                             de = eke - TE(medium)*0.99 
+                             de = eke - TE[medium]*0.99 
                           #  i.e., if the step we intend to take is longer than the particle 
                           #  range, the particle energy goes down to the threshold 
                           # (eke is the initial particle energy)  
@@ -1063,7 +1063,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                         else:
                             WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
                                 lelktmp = lelktmp - 1; ]
-                            elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                            elktmp = (lelktmp+1-eke0[medium])/eke1[medium]
                             eketmp = E_array(lelktmp+1,medium)
                             # tuss = range_ep(qel,lelktmp+1,medium) - tuss
                             # IK: rhof scaling bug, June 9 2006: because of the change in 
@@ -1148,7 +1148,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                              #  now tuss is the range of the final energy electron 
                              #  scaled to the default mass density from PEGS4      
                           if  tuss <= 0 :
-                               de = eke - TE(medium)*0.99 
+                               de = eke - TE[medium]*0.99 
                             #  i.e., if the step we intend to take is longer than the particle 
                             #  range, the particle energy goes down to the threshold 
                             # (eke is the initial particle energy)  
@@ -1157,7 +1157,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                           else:
                               WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
                                   lelktmp = lelktmp - 1; ]
-                              elktmp = (lelktmp+1-eke0(medium))/eke1(medium)
+                              elktmp = (lelktmp+1-eke0[medium])/eke1[medium]
                               eketmp = E_array(lelktmp+1,medium)
                               # tuss = range_ep(qel,lelktmp+1,medium) - tuss
                               # IK: rhof scaling bug, June 9 2006: because of the change in 
@@ -1243,13 +1243,13 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
                        # Single scattering
 
-                       ekems = Max(ekef,ecut(irl)-rm)
+                       ekems = max(ekef,ecut[irl]-rm)
                        p2 = ekems*(ekems + rmt2)
                        beta2 = p2/(p2 + rmsq)
-                       chia2 = xcc(medium)/(4*blcc(medium)*p2)
+                       chia2 = xcc[medium]/(4*blcc[medium]*p2)
                        if  spin_effects :
 
-                         elkems = Log(ekems)
+                         elkems = log(ekems)
                          # Unhandled macro '$ SET INTERVAL elkems,eke;'
                          if lelec < 0:
                               etap = etae_ms1[Lelkems,MEDIUM*elkems+ etae_ms0[Lelkems,MEDIUM]  # EVALUATE etap USING etae_ms(elkems)]
@@ -1333,7 +1333,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             eie   = peie
             e[np] = peie
 
-            # if( irnew != irl and eie <= ecut(irl)) [
+            # if( irnew != irl and eie <= ecut[irl]) [
             # IK: the above is clearly a bug. If the particle energy falls 
             #     below ecut, but the particle is actually entering a new 
             #     region, the discard will happen in the current region 
@@ -1341,7 +1341,7 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             #     resulting annihilation photons will have the new position 
             #     but the old region => confusion in the geometry routine 
             #     is very likely.      Jan 27 2004 
-            if  irnew == irl and eie <= ecut(irl):
+            if  irnew == irl and eie <= ecut[irl]:
 
                go to :ECUT-DISCARD:
 
@@ -1359,13 +1359,13 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
      electron_region_change()
  else:
     
-     ir[np] = irnew; irl = irnew; medium = med(irl)
+     ir[np] = irnew; irl = irnew; medium = med[irl]
  # End inline replace: $ electron_region_change; ---- ]
 
             # After transport call to user scoring routine
 IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
-            if eie <= ecut(irl):
+            if eie <= ecut[irl]:
 
                go to :ECUT-DISCARD:
 
@@ -1476,7 +1476,7 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             # However, if EII is on, we should still permit an interaction
             # even if E<moller threshold as EII interactions go down to
             # the ionization threshold which may be less than thmoll.
-            if e[np] <= thmoll(medium) and eii_flag == 0:
+            if e[np] <= thmoll[medium] and eii_flag == 0:
                 
                  # (thmoll = lower Moller threshold)
 
@@ -1600,7 +1600,7 @@ else:
 :ECUT-DISCARD:
 if  medium > 0 :
 
-    if eie > ae(medium):
+    if eie > ae[medium]:
 
         idr = EGSCUTAUS
         if lelec < 0:

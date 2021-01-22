@@ -28,10 +28,19 @@ main_subs = (
         # Compiler directives
         r"^%(.*?)$": r"# %\1",  # Any line starting with %
         r"^!(.*?)$": r"# !\1",  # Any line starting with !
+
+        # Common arrays needing square brackets
+        r"(?i)\(irl\)": r"[irl]",  # (irl) region number local variable
+        r"(?i)\(medium\)": r"[medium]",  # medium number, often set to med[irl]
+
+        # Max, min, log sometimes have mixed case - Python needs lowercase
+        r"(?i)\bMAX\((.*?)\)": r"max(\1)",
+        r"(?i)\bMIN\((.*?)\)": r"min(\1)",
+        r"(?i)\bLOG\((.*?)\)": r"log(\1)",
     }
     | block_subs |  # merge operators for dicts Python 3.9+
     {
-        # Math operators
+        # Math operators - (?i) makes whole pattern case-insensitive
         r"(?i)if(.*?)~=": r"if\1!=", # not equals
         r"(?i)if(.*?)\.NE\.": r"if\1 != ", # old-style fortran not equals
         r"(?i)if(.*?)\.EQ\.": r"if\1 == ", # old-style fortran not equals
@@ -58,8 +67,8 @@ main_subs = (
         r"\.false\.": "False",
         r"[iI]f(.*?)(?:=)?=\s*True": r"if\1 is True",
         r"[iI]f(.*?)(?:=)?=\s*False": r"if\1 is False",
-        r"\$IMPLICIT_NONE": r"",
-        r"\$DEFINE_LOCAL_VARIABLES_ELECTR": r"# $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?",
+        r"(?i)\$IMPLICIT_NONE": r"",
+        r"(?i)\$DEFINE_LOCAL_VARIABLES_ELECTR": r"# $DEFINE_LOCAL_VARIABLES_ELECTR XXX do we need to type these?",
 
     }
 )
