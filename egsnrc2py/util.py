@@ -32,11 +32,12 @@ main_subs = (
     | block_subs |  # merge operators for dicts Python 3.9+
     {
         # Math operators
-        r"if(.*?)~=": r"if\1!=", # not equals
-        r"if(.*?).NE.": r"if\1 != ", # old-style fortran not equals
-        r"if(.*?) = ": r"if\1 == ", # = to ==
-        r"if(.*?) = ": r"if\1 == ", # = to == again if there multiple times
-        r"if(.*?) = ": r"if\1 == ", # = to == again
+        r"(?i)if(.*?)~=": r"if\1!=", # not equals
+        r"(?i)if(.*?)\.NE\.": r"if\1 != ", # old-style fortran not equals
+        r"(?i)if(.*?)\.EQ\.": r"if\1 == ", # old-style fortran not equals
+        r"(?i)if(.*?) = ": r"if\1 == ", # = to ==
+        r"(?i)if(.*?) = ": r"if\1 == ", # = to == again if there multiple times
+        r"(?i)if(.*?) = ": r"if\1 == ", # = to == again
 
         # Booleans
         r" \| ": r" or ",

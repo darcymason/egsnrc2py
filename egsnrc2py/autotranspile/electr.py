@@ -125,7 +125,7 @@ while True:  # :NEWELECTRON: LOOP
                        RNNE1 = rng_array(rng_seed)
                       rng_seed = rng_seed + 1
                     
-                # End inline replace: $ RANDOMSET RNNE1; ---- IF(RNNE1.EQ.0.0) [RNNE1=1.E-30;]
+                # End inline replace: $ RANDOMSET RNNE1; ---- if(RNNE1 == 0.0) [RNNE1=1.E-30;]
                  DEMFP=MAX(-LOG(RNNE1),EPSEMFP)
             # End inline replace: $ SELECT_ELECTRON_MFP; ----
                 #  Default FOR $ SELECT-ELECTRON-MFP; is: $ RANDOMSET rnne1
@@ -472,7 +472,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
                     range_discard()
                 else:
     
-                    ;IF( i_do_rr(irl) = 1 and e[np] < e_max_rr(irl) ) [
+                    ;if( i_do_rr(irl) == 1 and e[np] < e_max_rr(irl) ) [
                         if tperp >= range:
                              [# particle cannot escape local region
                             idisc = 50 + 49*iq[np] # 1 for electrons, 99 for positrons
@@ -874,7 +874,7 @@ RHOF=RHOR(IRL)/RHO(MEDIUM) # density ratio scaling template
 
                             # additional vacuum transport in em field
                         e_range = vacdst
-IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
                         # Transport the particle
                         x[np] = x[np] + u[np]*vstep
                         y[np] = y[np] + v[np]*vstep
@@ -1311,7 +1311,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                 else:
                      u_final = u[np]; v_final = v[np]; w_final = w[np]; 
 
-IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
             # Transport the particle
 
@@ -1333,7 +1333,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
             eie   = peie
             e[np] = peie
 
-            # IF( irnew ~= irl and eie <= ecut(irl)) [
+            # if( irnew != irl and eie <= ecut(irl)) [
             # IK: the above is clearly a bug. If the particle energy falls 
             #     below ecut, but the particle is actually entering a new 
             #     region, the discard will happen in the current region 
@@ -1363,7 +1363,7 @@ IARG=TRANAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
  # End inline replace: $ electron_region_change; ---- ]
 
             # After transport call to user scoring routine
-IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
             if eie <= ecut(irl):
 
@@ -1487,7 +1487,7 @@ IARG=TRANAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
                     # Brems not allowed either.
                 go to :EBREMS:
 
-IARG=MOLLAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=MOLLAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             call moller
             # The following macro template allows the user to change the
             # particle selection scheme (e.g., adding importance sampling
@@ -1495,7 +1495,7 @@ IARG=MOLLAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
             # (Default macro is template '$ PARTICLE-SELECTION-ELECTR' 
             # which in turn has the 'null' replacement ';')
 
-IARG=MOLLAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=MOLLAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
             if  iq[np] == 0 :
                  return
 
@@ -1538,7 +1538,7 @@ IARG=MOLLAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
     if rnno25 < pbr2:
 
         # It is bhabha
-IARG=BHABAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=BHABAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         call bhabha
         # The following macro template allows the user to change the
         # particle selection scheme (e.g., adding importance sampling
@@ -1547,13 +1547,13 @@ IARG=BHABAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         # has the 'null' replacement ';')
 
 
-IARG=BHABAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=BHABAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         if  iq[np] == 0 :
              return
     else:
 
         # It is in-flight annihilation
-IARG=ANNIHFAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=ANNIHFAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         call annih
         # The following macro template allows the user to change the
         # particle selection scheme (e.g., adding importance sampling
@@ -1562,7 +1562,7 @@ IARG=ANNIHFAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
         # has the 'null' replacement ';')
 
 
-IARG=ANNIHFAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=ANNIHFAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         EXIT :NEWELECTRON: # i.e., in order to return to shower
         # After annihilation the gammas are bound to be the lowest energy
         # particles, so return and follow them.
@@ -1575,7 +1575,7 @@ return # i.e., return to shower
 # Bremsstrahlung-call section
 # ---------------------------------------------
 :EBREMS:
-IARG=BREMAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=BREMAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 call brems
 # The following macro template allows the user to change the particle
 # selection scheme (e.g., adding importance sampling such as splitting,
@@ -1583,7 +1583,7 @@ call brems
 # '$ PARTICLE-SELECTION-ELECTR' which in turn has the 'null' replacement ';') 
 
 
-IARG=BREMAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=BREMAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 if iq[np] == 0:
 
     # Photon was selected.
@@ -1611,7 +1611,7 @@ else:
     idr = EGSCUTAUS; edep = e[np] - prm; 
 
 
-;IARG=idr ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]  # The default replacement for this macros is 
+;IARG=idr ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]  # The default replacement for this macros is 
                      #           $ AUSCALL(idr)                    
                      # Use this macro if you wish to modify the   
                      # treatment of track ends                    
@@ -1623,11 +1623,11 @@ if lelec > 0:
     # It's a positron. Produce annihilation gammas if edep < peie
     if edep < peie:
 
-IARG=ANNIHRAUSB ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=ANNIHRAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         call annih_at_rest
 
 
-IARG=ANNIHRAUSA ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=ANNIHRAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
         # Now discard the positron and take normal return to follow
         # the annihilation gammas.
         return # i.e., return to shower
@@ -1653,7 +1653,7 @@ if (lelec < 0) or (idisc == 99):
 else:
     edep = e[np] + prm;
 
-IARG=USERDAUS ;  IF (IAUSFL(IARG+1).NE.0) [CALL AUSGAB(IARG);]
+IARG=USERDAUS ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
 if idisc == 99:
 
