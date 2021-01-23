@@ -991,17 +991,17 @@ IARG=TRANAUSB ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
                                # This is an error condition because the average transition 
                                # in the initial direction of motion is always smaller than 1/Q1
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
-                               logger.info({P2})
+                               logger.info(' Stoped in SET-TVSTEP because xi > 1! ')
+                               logger.info(' Medium: ',medium)
+                               logger.info(' Initial energy: ',eke)
+                               logger.info(' Average step energy: ',ekems)
+                               logger.info(' tustep: ',tustep)
+                               logger.info(' ustep0: ',ustep0)
+                               logger.info(' vstep:  ',vstep)
+                               logger.info(' ==> xi = ',xi)
                                logging.critical('***************** Error: ')
     
-                                       logging.critical('{P2}')
+                                       logging.critical(''This is a fatal error condition'')
     
                                        logging.critical('***************** Quitting now.')
     

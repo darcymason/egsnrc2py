@@ -33,19 +33,19 @@ error_line = '***************** Error: '
 quit_line = '***************** Quitting now.'
 
 logging_replace = {
-    '$egs_debug(#,#);': 'logger.debug({P2})',
-    '$egs_info(#,#);': 'logger.info({P2})',
-    '$egs_warning(#,#);': f"logger.warning('{warning_line}'\n{{P2}}",
+    '$egs_debug(#,#);': "logger.debug(\\g<3>)",
+    '$egs_info(#,#);': "logger.info(\\g<3>)",
+    '$egs_warning(#,#);': f"logger.warning('{warning_line}\\n\\g<3>')",
     '$egs_fatal(#,#,#);': textwrap.dedent(
         f"""logging.critical('{error_line}')\n
-        logging.critical('{{P2}}')\n
+        logging.critical(\\g<3>)\n
         logging.critical('{quit_line}')\n
-        sys.exit({{P3}})
+        sys.exit(\\g<4>)
         """
     ),
     '$egs_fatal(#,#);': textwrap.dedent(
         f"""logging.critical('{error_line}')\n
-        logging.critical('{{P2}}')\n
+        logging.critical('\\g<3>')\n
         logging.critical('{quit_line}')\n
         sys.exit(1)
         """

@@ -125,3 +125,9 @@ class TestMacroReplace:
         code = "$RANDOMSET rnn1;"
         macros_code, code = apply_macros(macros_code, code)
         assert 'rnn1 = randomset()' in code
+
+    def test_egs_info_replace(self):
+        macros_code = "REPLACE {$egs_info(#,#);} WITH { write(i_log,{P1}) {P2}; };"
+        code = "$egs_info(*,' Stoped in SET-TVSTEP because xi > 1! ');"
+        macros_code, code = apply_macros(macros_code, code)
+        assert "logger.info(' Stoped" in code
