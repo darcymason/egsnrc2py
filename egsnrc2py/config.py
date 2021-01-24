@@ -20,6 +20,7 @@ REAL = "np.float64"
 ENERGY_PRECISION = "np.float32"
 INTEGER = "np.int32"
 LOGICAL = "bool"
+STRING = "str"
 
 default_float = "np.float32"
 
