@@ -2,6 +2,7 @@ import re
 from typing import Tuple, List
 from pprint import pprint
 import textwrap
+from egsnrc2py import edited_callbacks
 
 from egsnrc2py.util import nested_brace_value, fix_identifiers, block_subs, replace_subs
 from egsnrc2py.config import (
@@ -16,7 +17,7 @@ logger = logging.getLogger('egsnrc2py')
 
 
 commons = {}
-callbacks = set()
+callbacks = {}
 empty_callbacks = set()
 imports = set()
 macros = {}
@@ -64,6 +65,8 @@ func_signatures = {
 
 }
 
+dont_inline = ["randomset"]
+
 
 # Macros to leave alone or deal with in special functions
 # Set value to None if meant to ignore - match will be put in a Python comment
@@ -84,15 +87,21 @@ def write_callbacks_file(filename) -> None:
     with open(filename, "w") as f:
         f.write(_generate_callbacks_code(filename))
 
-def _generate_callbacks_code(filename: str):
+def _generate_callbacks_code():
     cb_list = []
-    callbacks_str = ""
-    for name, args, repl in sorted(callbacks):
-        func_args, return_vars = func_details(name, args)
-        cb_list.append(
-            f"def {name}({func_args}):\n" + "\n    ".join(repl.splitlines())
-        )
+    for name in sorted(callbacks):
+        if name in dir(edited_callbacks):
+            cb_list.append(getattr(edited_callbacks, name))
+        else:
+            args, repl, return_vars = callbacks[name]
+            # func_args, return_vars = func_details(name, args)
+            func_body = '\n    '.join(textwrap.dedent(repl).splitlines())
+            return_str = f"\n   return {', '.join(return_vars)}" if return_vars else ""
+            cb_list.append(
+                f"def {name}({', '.join(args)}):\n{func_body}{return_str}"
+            )
 
+    callbacks_str = ""
     if cb_list:
         callbacks_str = "\n# CALLBACKS ---- \n" + "\n".join(cb_list) + "\n\n"
 
@@ -100,9 +109,6 @@ def _generate_callbacks_code(filename: str):
         f"{cb} = None"
         for cb in sorted(empty_callbacks)
     ) + "\n\n"
-
-    module_name = str(Path(filename).stem)
-    imports.add(f"\nfrom egsnrc.{module_name} import *")
 
     return empty_callbacks_str + callbacks_str
 
@@ -199,16 +205,24 @@ def bracket_function_call(match, macro_from, expansion):
     func_args, return_vars = func_details(func_name, args)
     args_str = f"({', '.join(func_args)})"
     logger.debug(f"Handling function '{func_name}'")
-    empty_callbacks.add(func_name)
     return_str = f"{', '.join(return_vars)} = " if return_vars else ""
-    fn_check = f"if {func_name}:\n    {return_str}{func_name}{args_str}"
-    lines = []
-    if expansion.strip().replace(";",""):  # non-empty replace
-        lines = [f"\nelse:"] + [
-            f"    {line}"
-            for line in expansion.splitlines()
-        ]
-    return pre_comment + fn_check + "\n".join(lines) + post_comment
+    if func_name in dont_inline:
+        callbacks[func_name] = (func_args, expansion, return_vars)
+    else:
+        empty_callbacks.add(func_name)
+
+    func_call = f"{return_str}{func_name}{args_str}"
+    if func_name in dont_inline:
+        return func_call
+    else:
+        fn_check = f"if {func_name}:\n    {func_call}"
+        lines = []
+        if expansion.strip().replace(";",""):  # non-empty replace
+            lines = [f"\nelse:"] + [
+                f"    {line}"
+                for line in expansion.splitlines()
+            ]
+        return pre_comment + fn_check + "\n".join(lines) + post_comment
 
 
 def handle_macro_expansion(
@@ -265,7 +279,8 @@ def handle_macro_expansion(
 
         if "call " in expansion or " = " in expansion or macro_from.lower().startswith("$call_"):
             return add_indent(
-                bracket_function_call(match, macro_from, expansion),
+                bracket_function_call(
+                    match, macro_from, expansion),
                 match
             )
         else:

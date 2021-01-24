@@ -1,3 +1,47 @@
+
+# EMPTY CALLBACKS ----
+calculate_elastic_scattering_mfp = None
+calculate_tstep_from_demfp = None
+calculate_xi = None
+call_howfar_in_electr = None
+call_hownear = None
+call_user_electron = None
+check_negative_ustep = None
+compute_drange = None
+compute_eloss = None
+compute_eloss_g = None
+compute_range = None
+electron_region_change = None
+evaluate_bhabha_fraction = None
+evaluate_ebrem_fraction = None
+evaluate_pbrem_fraction = None
+evaluate_sig0 = None
+evaluate_sigf = None
+range_discard = None
+scale_sig0 = None
+select_electron_mfp = None
+set_skindepth = None
+set_tvstep = None
+set_ustep = None
+start_new_particle = None
+update_demfp = None
+
+
+# CALLBACKS ---- 
+
+def randomset():
+    global rng_seed
+
+    if rng_seed > 24:
+        ranlux(rng_array)
+        rng_seed = 1
+
+    random_num = rng_array[rng_seed]
+    rng_seed += 1
+
+    return random_num
+
+
 # !COMMENTS
 # !INDENT C5
 # !INDENT M4
@@ -115,19 +159,7 @@ while True:  # :NEWELECTRON: LOOP
                 select_electron_mfp()
             else:
     
-                # --- Inline replace: $ RANDOMSET RNNE1; -----
-                if randomset:
-                    RNNE1 = randomset()
-                else:
-                    
-                      if  rng_seed > 24 :
-
-                          call ranlux(rng_array); rng_seed = 1
-
-                       RNNE1 = rng_array(rng_seed)
-                      rng_seed = rng_seed + 1
-                    
-                # End inline replace: $ RANDOMSET RNNE1; ---- if(RNNE1 == 0.0) [RNNE1=1.E-30;]
+                RNNE1 = randomset() if(RNNE1 == 0.0) [RNNE1=1.E-30;]
                  DEMFP=max(-log(RNNE1),EPSEMFP)
             # End inline replace: $ SELECT_ELECTRON_MFP; ----
                 #  Default FOR $ SELECT-ELECTRON-MFP; is: $ RANDOMSET rnne1
@@ -412,19 +444,7 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                 random_tustep = RANDOMIZE_TUSTEP
                 if random_tustep:
 
-                    # --- Inline replace: $ RANDOMSET rnnotu; -----
-                    if randomset:
-                        rnnotu = randomset()
-                    else:
-                        
-                          if  rng_seed > 24 :
-
-                              call ranlux(rng_array); rng_seed = 1
-
-                           rnnotu = rng_array(rng_seed)
-                          rng_seed = rng_seed + 1
-                        
-                    # End inline replace: $ RANDOMSET rnnotu; ----
+                    rnnotu = randomset()
                     tmxs = rnnotu*min(tmxs,smaxir[irl])
                 else:
 
@@ -698,19 +718,7 @@ RHOF=RHOR[irl]/RHO[medium] # density ratio scaling template
                         # Cross the boundary in a single scattering mode
                         domultiple = False # Do not do multiple scattering
                         # Sample the distance to a single scattering event
-                        # --- Inline replace: $ RANDOMSET rnnoss; -----
-                        if randomset:
-                            rnnoss = randomset()
-                        else:
-                            
-                              if  rng_seed > 24 :
-
-                                  call ranlux(rng_array); rng_seed = 1
-
-                               rnnoss = rng_array(rng_seed)
-                              rng_seed = rng_seed + 1
-                            
-                        # End inline replace: $ RANDOMSET rnnoss; ----
+                        rnnoss = randomset()
                         if  rnnoss < 1.e-30 :
 
                             rnnoss = 1.e-30
@@ -1431,19 +1439,7 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
 
         sigratio = sigf/sig0
 
-        # --- Inline replace: $ RANDOMSET rfict; -----
-        if randomset:
-            rfict = randomset()
-        else:
-            
-              if  rng_seed > 24 :
-
-                  call ranlux(rng_array); rng_seed = 1
-
-               rfict = rng_array(rng_seed)
-              rng_seed = rng_seed + 1
-            
-        # End inline replace: $ RANDOMSET rfict; ----
+        rfict = randomset()
 
     if rfict <= sigratio:
 
@@ -1462,19 +1458,7 @@ IARG=TRANAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
              ebr1 = ebr11[Lelke,MEDIUM]*elke+ ebr10[Lelke,MEDIUM]  # EVALUATE ebr1 USING ebr1(elke)
         # End inline replace: $ EVALUATE_EBREM_FRACTION; ----
           # Default is $ EVALUATE ebr1 USING ebr1(elke) 
-        # --- Inline replace: $ RANDOMSET rnno24; -----
-        if randomset:
-            rnno24 = randomset()
-        else:
-            
-              if  rng_seed > 24 :
-
-                  call ranlux(rng_array); rng_seed = 1
-
-               rnno24 = rng_array(rng_seed)
-              rng_seed = rng_seed + 1
-            
-        # End inline replace: $ RANDOMSET rnno24; ----
+        rnno24 = randomset()
         if rnno24 <= ebr1:
 
             # It was bremsstrahlung
@@ -1523,19 +1507,7 @@ IARG=MOLLAUSA ;  if (IAUSFL(IARG+1) != 0) [CALL AUSGAB(IARG);]
          pbr1 = pbr11[Lelke,MEDIUM]*elke+ pbr10[Lelke,MEDIUM]  # EVALUATE pbr1 USING pbr1(elke)
     # End inline replace: $ EVALUATE_PBREM_FRACTION; ----
        # Default is $ EVALUATE pbr1 USING pbr1(elke) 
-    # --- Inline replace: $ RANDOMSET rnno25; -----
-    if randomset:
-        rnno25 = randomset()
-    else:
-        
-          if  rng_seed > 24 :
-
-              call ranlux(rng_array); rng_seed = 1
-
-           rnno25 = rng_array(rng_seed)
-          rng_seed = rng_seed + 1
-        
-    # End inline replace: $ RANDOMSET rnno25; ----
+    rnno25 = randomset()
     if rnno25 < pbr1:
         goto_EBREMS = True
         break # XXX # It was bremsstrahlung

@@ -3,7 +3,7 @@ from textwrap import dedent
 from egsnrc2py.macros import re_from_to, func_details
 from egsnrc2py.macros import (
     _parse_and_apply_macros, macros, parameters, empty_callbacks, init_macros,
-    apply_macros
+    apply_macros, _generate_callbacks_code
 )
 from egsnrc2py.util import fix_identifiers
 
@@ -112,8 +112,9 @@ class TestMacroReplace:
         assert "   # Unhandled macro '$ SET INTERVAL elkems,eke;" in code.splitlines()[1]
 
     def test_randomset_call(self):
-        macros_code = """REPLACE {$RANDOMSET#;} WITH
-            {;
+        macros_code = """
+        REPLACE {$RANDOMSET#;} WITH
+            {
             IF ( rng_seed > 24 ) [
                 call ranlux(rng_array); rng_seed = 1;
             ]
@@ -124,7 +125,11 @@ class TestMacroReplace:
         """
         code = "$RANDOMSET rnn1;"
         macros_code, code = apply_macros(macros_code, code)
-        assert 'rnn1 = randomset()' in code
+        assert "rnn1 = randomset()" == code
+
+        callbacks_code = _generate_callbacks_code()
+        assert "def randomset()" in callbacks_code
+
 
     def test_egs_info_replace(self):
         macros_code = "REPLACE {$egs_info(#,#);} WITH { write(i_log,{P1}) {P2}; };"

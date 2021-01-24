@@ -210,9 +210,11 @@ if __name__ == "__main__":
     egs_code = replace_subs(egs_code, keyword_subs)
 
     macros.write_parameters_file(params_py_filename)
-    macros.write_callbacks_file(callbacks_filename)
+    # macros.write_callbacks_file() - for now will place in same output file
+    callbacks_code = macros._generate_callbacks_code()
 
     print("Writing", out_filename)
     with open(out_filename, "w") as f:
+        f.write(callbacks_code)
         f.write(egs_code)
 
