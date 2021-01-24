@@ -3,7 +3,7 @@ from pathlib import Path
 BASE_PATH = Path(__file__).resolve().parent
 
 MORTRAN_SOURCE_PATH = BASE_PATH / "HEN_HOUSE" / "src"
-EGS_HOME_PATH = BASE_PATH / "HEN_HOUSE" / "egs_home"
+EGS_HOME_PATH = BASE_PATH / "egs_home"
 AUTO_TRANSPILE_PATH = BASE_PATH / "autotranspile"
 TEMPLATES_PATH = BASE_PATH / "templates"
 

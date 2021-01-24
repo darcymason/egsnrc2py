@@ -46,6 +46,17 @@
 %E
 !INDENT M 4;    "indent each mortran nesting level by 4"
 !INDENT F 2;    "indent each fortran nesting level by 2"
+
+REPLACE {PARAMETER #=#;} WITH
+   { REPLACE {{P1}} WITH {{P2}}}
+
+PARAMETER $MXXXX=400;     "GAMMA SMALL ENERGY INTERVALS"
+x = $MXXXX;
+
+PARAMETER $MXXXX=1;
+y = $MXXXX
+
+
 $IMPLICIT-NONE;                        "default is IMPLICIT NONE"
 $INTEGER I,IQIN,IRIN;                  "$INTEGER defaults to INTEGER*4"
 $REAL XIN,YIN,ZIN,EIN,WTIN,UIN,VIN,WIN;"$REAL defaults to REAL*4"
@@ -85,9 +96,7 @@ DATA  MEDARR /$S'TA',22*' '/; "place medium name in an array"
 call egs_init;
 
 "STEP 2 cont"
-DO I=1,24[
-   MEDIA(I,1)=MEDARR(I);
-]"this is to avoid a DATA STATEMENT for"
+DO I=1,24[MEDIA(I,1)=MEDARR(I);]"this is to avoid a DATA STATEMENT for"
 "                                    a variable in COMMON"
 "NMED and DUNIT default to 1, i.e. one medium and we work in cm"
 
