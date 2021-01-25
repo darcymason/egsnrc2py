@@ -90,8 +90,8 @@ def write_callbacks_file(filename) -> None:
 def _generate_callbacks_code():
     cb_list = []
     for name in sorted(callbacks):
-        if name in dir(edited_callbacks):
-            cb_list.append(getattr(edited_callbacks, name))
+        if f"{name}_def" in dir(edited_callbacks):
+            cb_list.append(getattr(edited_callbacks, f"{name}_def"))
         else:
             args, repl, return_vars = callbacks[name]
             # func_args, return_vars = func_details(name, args)

@@ -4,7 +4,7 @@
 fortran_calls = [
     "ranlux"
 ]
-randomset = """
+randomset_def = """
 def randomset():
     global rng_seed
 
@@ -12,8 +12,16 @@ def randomset():
         ranlux(rng_array)
         rng_seed = 1
 
-    random_num = rng_array[rng_seed]
+    random_num = rng_array[rng_seed-1]
     rng_seed += 1
 
     return random_num
+"""
+
+
+randomiter_def = """
+def random_iter():
+    while True:
+        yield from rng_array
+        ranlux(rng_array)
 """
