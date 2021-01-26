@@ -3,15 +3,100 @@ from egsnrc2py.config import (
     REAL, ENERGY_PRECISION, INTEGER, LOGICAL, AUTO_TRANSPILE_PATH, STRING
 )
 from dataclasses import dataclass
-
+from textwrap import wrap
 import re
+
+
+class Common:
+    def __init__(self):
+        self.all_names = self.arr_names + self.var_names
+
+    def python_common_block(self, egsfortran_name="egsfortran"):
+        common_lines = []
+        common = self.common_name
+        common_lines.append(f"\n#  COMMON block {common} --------")
+        common_lines.append(f"{common} = {egsfortran_name}.{common}")
+        for var in self.all_names:
+            common_lines.append(f"{var} = {common}.{var}")
+
+        return "\n".join(common_lines)
+
+    def python_global_line(self):
+        name_list = ", ".join(self.all_names)
+
+        if len(name_list) < 70:
+            global_str = f"global {name_list}"
+
+        else:
+            global_str = "\n".join(
+                f"global {line}"
+                for line in wrap(name_list)
+            )
+        return f"# {self.common_name}\n{global_str}"
+
+class ComplexCommon(Common):
+    """Base class for generating from close-to-Mortran/Fortran style input
+
+    Typically, capture the `all_vars` from a Fortran version of common block,
+    replacing array dimensions with the `params.py` constants;
+    and the 'all_types_and_comments` from the Mortran macros definition blocks
+    separated by variable type.
+    """
+    def __init__(self):
+        # Change the "TYPE": {var1: comment, var2:comment}
+        #  to var1: (type, comment), var2: (type, comment)
+        types_comments = {}
+        for _type, names_comments in self.all_types_and_comments.items():
+            for names, comment in names_comments.items():
+                for i, name in enumerate([n.strip() for n in names.split(",")]):
+                    types_comments[name.lower()] = (_type, comment if i==0 else "")
+        self.types_comments = types_comments
+
+        self.vars = []
+        opt_args = r"(\w*,)*\w*"
+        for match in re.finditer(rf"[\w_]*(\({opt_args}\))?,?", self.all_vars, flags=re.MULTILINE):
+            name = match.group(0)
+            if name.endswith(","):
+                name = name[:-1]
+            if name:
+                self.vars.append(name)
+
+        self.var_names = [name for name in self.vars if "(" not in name]
+        self.arr_names = [x[0] for x in self.arr_names_types_comments()]
+        self.all_names = self.var_names + self.arr_names
+
+    def arr_names_types_comments(self):
+        for name in self.vars:
+            if "(" not in name:  # simple scalar
+                continue  # this loop only for arrays
+            name, args = name.split("(")
+            shape_str = f"({args.upper()}"
+            arr_type, comment = self.types_comments[name]
+            yield name, shape_str, arr_type, comment
+
+
+class Randomm(ComplexCommon):
+    common_name = "randomm"
+    all_vars = "rng_array(24),seeds(25),rng_seed"
+
+    # RANDOM from ranlux
+    all_types_and_comments = {
+        REAL:{
+            "rng_array":    "contains 24 random numbers",
+        },
+        INTEGER: {
+            "rng_seed":     "current pointer for rng_array",
+            "seeds":        "for storing the rng state",
+        },
+    }
+randomm = Randomm()
 
 
 # REPLACE {$COMIN-ELECTR;} WITH {;COMIN/DEBUG,BOUNDS,ELECIN,EPCONT,MEDIA,MISC,STACK,THRESH,
 # UPHIIN,UPHIOT,USEFUL,USER,RANDOM,ET-Control,CH-Steps,EGS-IO,
 #          EGS-VARIANCE-REDUCTION,EMF-INPUTS/;
-@dataclass
-class Stack:
+
+class Stack(Common):
     common_name = "stack"
     arr_max = "MXSTACK"
     arr_names = "e x y z u v w dnear wt iq ir latch".split()
@@ -37,9 +122,10 @@ class Stack:
         "stack pointer",
         "stack pointer before an interaction",
     ]
+stack = Stack()
 
-@dataclass
-class Bounds:
+
+class Bounds(Common):
     """CUTOFF ENERGIES & VACUUM TRANSPORT DISTANCE"""
     common_name = "bounds"
     arr_max = "MXREG"
@@ -53,8 +139,9 @@ class Bounds:
     var_names = ["vacdst"]
     var_types = [REAL]
     var_comments = ["Infinity (1E8)"]
+bounds = Bounds()
 
-@dataclass
+
 class Media:
     """NAMES OF MEDIA CURRENTLY BEING USED"""
     common_name = "media"
@@ -119,39 +206,7 @@ class Media:
             "in the default file iaea_photonuc.data.",
         ],  # photonuc_xsections;
     ]
-
-class ComplexCommon:
-    """Base class for generating from close-to-Mortran/Fortran style input
-
-    Typically, capture the `all_vars` from a Fortran version of common block,
-    replacing array dimensions with the `params.py` constants;
-    and the 'all_types_and_comments` from the Mortran macros definition blocks
-    separated by variable type.
-    """
-    def __init__(self):
-        # Change the "TYPE": {var1: comment, var2:comment}
-        #  to var1: (type, comment), var2: (type, comment)
-        types_comments = {}
-        for _type, names_comments in self.all_types_and_comments.items():
-            for names, comment in names_comments.items():
-                for i, name in enumerate([n.strip() for n in names.split(",")]):
-                    types_comments[name.lower()] = (_type, comment if i==0 else "")
-        self.types_comments = types_comments
-
-        self.vars = []
-        opt_args = r"(\w*,)*\w*"
-        for match in re.finditer(rf"\w*(\({opt_args}\))?,", self.all_vars, flags=re.MULTILINE):
-            self.vars.append(match.group(0)[:-1])
-
-    def arr_names_types_comments(self):
-        for name in self.vars:
-            if "(" not in name:  # simple scalar
-                continue  # this loop only for arrays
-            name, args = name.split("(")
-            shape_str = f"({args.upper()}"
-            arr_type, comment = self.types_comments[name]
-            yield name, shape_str, arr_type, comment
-
+media = Media()
 class ElecIn(ComplexCommon):
     """ELECTRON TRANSPORT INPUT"""
     common_name = "elecin"
@@ -220,8 +275,33 @@ class ElecIn(ComplexCommon):
         }
     }
 
+elecin = ElecIn()
+
+
+class Uphiot(ComplexCommon):
+    common_name = "uphiot"
+    all_vars = "THETA,SINTHE,COSTHE,SINPHI,COSPHI,PI,TWOPI,PI5D2".lower()
+    all_types_and_comments = {
+        REAL: {
+            'theta':  "polar scattering angle",
+            'sinthe': "sin(THETA)",
+            'costhe': "cos(THETA)",
+            'sinphi': "sine of the azimuthal scattering angle",
+            'cosphi': "cosine of the azimuthal scattering angle",
+            'pi': "",
+            'twopi': "",
+            'pi5d2': "",
+        }
+    }
+uphiot = Uphiot()
+
+
 if __name__ == "__main__":
-    elec = ElecIn()
-    for info in elec.arr_names_types_comments():
-        print(info)
-    # print(elec.types_comments)
+    # elec = ElecIn()
+    # for info in elec.arr_names_types_comments():
+    #     print(info)
+    # # print(elec.types_comments)
+
+    for obj in list(globals().values()):
+        if isinstance(obj, Common):
+            print(obj.python_common_block())
