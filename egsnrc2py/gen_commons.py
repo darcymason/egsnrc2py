@@ -102,5 +102,37 @@ def make_common_file(filename: str):
         f.write("\n".join(lines))
 
 
+def make_egsfortran_globals(egsfortran_name="egsfortran") -> str:
+    """Produce Python global variables referencing f2py common blocks
+
+    This is for mixing new Python code with old Fortran code
+    while transitioning to a (maybe someday) full Python conversion
+
+    Returns
+    -------
+    str
+        common_block of statements referencing the f2py objects
+    """
+    common_strs = []
+    for obj in list(globals().values()):
+        if isinstance(obj, Common):
+            common_strs.append(obj.python_common_block())
+    return "\n".join(common_strs)
+
+def make_global_lines():
+    """Return lines of Python 'global' statements, one for each common block
+    """
+    global_strs = []
+    for obj in list(globals().values()):
+        if isinstance(obj, Common):
+            global_strs.append(obj.python_global_line())
+    return "\n".join(global_strs)
+
+
 if __name__ == "__main__":
-    make_common_file(AUTO_TRANSPILE_PATH / "common.py")
+    # make_common_file(AUTO_TRANSPILE_PATH / "common.py")
+    print("\nPython global blocks referencing f2py fortran -----------")
+    print(make_egsfortran_globals())
+    print("-"*50)
+    print("\nPython global statements for common block vars")
+    print(make_global_lines())
