@@ -1,6 +1,7 @@
 
 from egsnrc2py.config import (
-    REAL, ENERGY_PRECISION, INTEGER, LOGICAL, AUTO_TRANSPILE_PATH, STRING
+    REAL, ENERGY_PRECISION, LOGICAL, AUTO_TRANSPILE_PATH, STRING,
+    INTEGER, SHORT_INT
 )
 from dataclasses import dataclass
 from textwrap import wrap
@@ -142,7 +143,7 @@ class Bounds(Common):
 bounds = Bounds()
 
 
-class Media:
+class Media(Common):
     """NAMES OF MEDIA CURRENTLY BEING USED"""
     common_name = "media"
     arr_max = "MXMED"
@@ -294,6 +295,107 @@ class Uphiot(ComplexCommon):
         }
     }
 uphiot = Uphiot()
+
+class Thresh(ComplexCommon):
+    common_name = "thresh"
+
+    all_vars = (
+        "RMT2,RMSQ,"
+        "AP(mxmed),AE(mxmed),UP(mxmed),UE(mxmed),TE(mxmed),THMOLL(mxmed)"
+    ).lower()
+    all_types_and_comments = {
+        REAL: {
+            'rmt2':  "2*electron mass in MeV",
+            'rmsq':  "electron mass squared in MeV**2",
+            'ap':    "photon creation threshold energy",
+            'ae':    "electron creation threshold energy (total)",
+            'up':    "upper photon energy in PEGS4 data set",
+            'ue':    "upper electron energy in PEGS4 data set",
+            'te':    "electron creation threshold energy (kinetic)",
+            'thmoll':"Moller threshold = AE + TE",
+        }
+    }
+thresh = Thresh()
+
+
+class Useful(ComplexCommon):
+    common_name = "useful"
+
+    all_vars = "PZERO,PRM,PRMT2,RM,MEDIUM,MEDOLD".lower()
+
+    all_types_and_comments = {
+        ENERGY_PRECISION: {
+            'pzero':   "precise zero",
+            'prm':     "precise electron mass in MeV",
+            'prmt2':   "2*PRM",
+        },
+        REAL: {
+            'rm':      "electron mass in MeV",
+        },
+        INTEGER: {
+            'medium':  "medium index of current region",
+            'medold':  "medium index of previous region"
+            # The rest mass value is as recommended by CODATA 2014"
+            # http://physics.nist.gov/cgi-bin/cuu/Value?mec2mev"
+            # DATA RM,PRM,PRMT2,PZERO/0.5109989461,0.5109989461,1.0219978922,0.D0/;
+        },
+    }
+useful = Useful()
+
+class Geom(ComplexCommon):
+    """From tutor4"""
+    common_name = "geom"
+
+    all_vars = "zbound"
+
+    all_types_and_comments = {
+        REAL: {
+            "zbound": ""
+        },
+        INTEGER: {
+            "iwatch": ""
+        },
+    }
+geom = Geom()
+class Score(ComplexCommon):
+    """From tutor4"""
+    common_name = "score"
+
+    all_vars = "escore(3),iwatch"
+
+    all_types_and_comments = {
+        REAL: {
+            "escore": ""
+        },
+        INTEGER: {
+            "iwatch": ""
+        },
+    }
+score = Score()
+
+
+class Misc(ComplexCommon):
+    """From tutor4"""
+    common_name = "misc"
+
+    all_vars = "dunit,kmpi,kmpo,rhor(mxreg),med(mxreg),iraylr(mxreg),iphotonucr(mxreg)"
+
+    all_types_and_comments = {
+        REAL: {
+            'dunit':   "unit scaling factor",
+            'rhor':    "density of a given region",
+        },
+        INTEGER: {
+            'kmpi':    "fortran unit number of the pegs4 datafile",
+            'kmpo':    "fortran unit number of pegs4 echo file",
+        },
+        SHORT_INT: {
+            'med':   "medium number for a given region",
+            'iraylr': "Rayleigh switch for a given region",
+            'iphotonucr': "photonuclear switch for a given region",
+        }
+    }
+misc = Misc()
 
 
 if __name__ == "__main__":
