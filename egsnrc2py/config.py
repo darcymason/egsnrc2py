@@ -19,6 +19,7 @@ TEMPLATES_PATH = BASE_PATH / "templates"
 REAL = "np.float64"
 ENERGY_PRECISION = "np.float32"
 INTEGER = "np.int32"
+SHORT_INT = "np.int16"
 LOGICAL = "bool"
 STRING = "str"
 
