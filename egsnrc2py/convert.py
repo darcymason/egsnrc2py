@@ -174,7 +174,9 @@ def build_particle_class(filename) -> None:
 if __name__ == "__main__":
     from egsnrc2py.config import EGS_HOME_PATH
 
-    with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
+    # with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
+    #     egs_code = f.read()
+    with open(MORTRAN_SOURCE_PATH / "shower.mortran", 'r') as f:
         egs_code = f.read()
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
