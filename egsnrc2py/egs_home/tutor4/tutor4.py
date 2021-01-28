@@ -279,30 +279,6 @@ for i in range(ncase):
         shower(iqin,ein,xin,yin,zin,uin,vin,win,irin,wtin)
         egsfortran.watch(-1,iwatch)  # print a message that this history is over
 
-
-
-# ircode = numpy.array(0)
-# for i in range(1, 10):
-#     logger.info(f' Start history {i:4}')
-
-#     np=1
-#     npold = np # Set the old stack counter
-#     stack.dneari=0.0
-#     iq[0]=iqin; e[0]=ein; u[0]=uin; v[0]=vin; w[0]=win
-
-
-#     # TRANSFER PROPERTIES TO [0] FROM I
-#     x[0]=xin;y[0]=yin;z[0]=zin;ir[0]=irin
-#     wt[0]=wtin;dnear[0]=dneari;latch[0]=latchi
-
-#     while np > 0:
-#         if iq[np-1] == 0:
-#             egsfortran.photon(ircode)
-#         else:
-#             egsfortran.electr(ircode)
-   # shower(iqin,ein,xin,yin,zin,uin,vin,win,irin,wtin)
-          
-
 # -----------------------------------------------------------------
 # STEP 8   OUTPUT-OF-RESULTS                                       
 # -----------------------------------------------------------------
