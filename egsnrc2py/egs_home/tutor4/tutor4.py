@@ -265,7 +265,7 @@ wtin=1.0  #               weight = 1 since no variance reduction used
 # ---------------------------------------------------------------------
 # initiate the shower 10 times
 
-ncase=10;  "INITIATE THE SHOWER NCASE TIMES"
+ncase=10  # INITIATE THE SHOWER NCASE TIMES
 
 for i in range(ncase):
     if (iwatch != 0) and (iwatch != 4):
@@ -277,7 +277,7 @@ for i in range(ncase):
            f"{latchi:10}{wtin:10.3E}"
         )
         shower(iqin,ein,xin,yin,zin,uin,vin,win,irin,wtin)
-        egsfortran.watch(-1,iwatch);  "print a message that this history is over"
+        egsfortran.watch(-1,iwatch)  # print a message that this history is over
 
 
 
