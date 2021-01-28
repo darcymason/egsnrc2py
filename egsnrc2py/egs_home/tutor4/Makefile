@@ -1,7 +1,7 @@
 
 ###############################################################################
 #
-#  EGSnrc makefile to build the tutor1 application
+#  EGSnrc makefile to build the tutor4 application
 #  Copyright (C) 2015 National Research Council Canada
 #
 #  This file is part of EGSnrc.
@@ -53,7 +53,7 @@ include $(EGS_CONFIG)
 
 # Then define the user code name
 #
-USER_CODE = tutor1
+USER_CODE = tutor4
 
 # User code specific definitions for Make
 #

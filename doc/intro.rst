@@ -33,7 +33,7 @@ in ``electr.mortran``)
 
 Autotranspile output goes into the `autotranspile` folder.
 
-Hand-edits (final versions) are in folder ``egsnrc_py``.  This is the EGSnrc
+Hand-edits (final versions) are in folder ``egsnrc``.  This is the EGSnrc
 code in Python format. The folder is set up as a Python project structure --
 ultimately if all this works, that would be copied to its own repo for
 ongoing work.
