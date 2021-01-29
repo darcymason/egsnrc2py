@@ -41,18 +41,6 @@
 "  egs_init at the beginning and call egs_finish at the end.                  "
 "                                                                             "
 "#############################################################################"
-
-
-%L
-%E
-!INDENT M 4;    "indent each MORTRAN nesting level by 4"
-!INDENT F 2;    "indent each FORTRAN nesting level by 2"
-$IMPLICIT-NONE;
-$INTEGER I,IQIN,IRIN,NCASE;
-$REAL XIN,YIN,ZIN,EIN,WTIN,UIN,VIN,WIN,ANORM,TOTAL,EI;
-"---------------------------------------------------------------------"
-"STEP 1:  USER-OVERRIDE-OF-EGSnrc-MACROS                              "
-"---------------------------------------------------------------------"
 REPLACE {$MXMED} WITH {1}   "only 1 medium in the problem(default 10)"
 REPLACE {$MXREG} WITH {3}   "only 3 geometric regions (default 2000)"
 REPLACE {$MXSTACK} WITH {15}"less than 15 particles on stack at once"
@@ -65,7 +53,6 @@ REPLACE {$CALL-HOWNEAR(#);} WITH {
 REPLACE {;COMIN/SCORE/;} WITH {
    ;COMMON/SCORE/ESCORE(3),IWATCH; $INTEGER IWATCH; REAL*8 ESCORE;
 }
-
 ;COMIN/BOUNDS,GEOM,MEDIA,MISC,SCORE,STACK,THRESH,USEFUL/;"NOTE ; BEFORE COMIN"
 "       The above expands into a series of COMMON statements"
 "       BOUNDS contains ECUT and PCUT"
@@ -77,113 +64,10 @@ REPLACE {;COMIN/SCORE/;} WITH {
 "       THRESH contains various thresholds"
 "       USEFUL contains PRM"
 
-"---------------------------------------------------------------------"
-"STEP 2 PRE-HATCH-CALL-INITIALIZATION                                 "
-"---------------------------------------------------------------------"
-CHARACTER*4 MEDARR(24);
-DATA  MEDARR /$S'TA',22*' '/; "place medium name in an array"
-"                            $S is a MORTRAN macro to expand strings"
+%L
+!INDENT M 4;    "indent each MORTRAN nesting level by 4"
+!INDENT F 2;    "indent each FORTRAN nesting level by 2"
 
-" Initialize the EGSnrc system "
-call egs_init;
-
-DO I=1,24[MEDIA(I,1)=MEDARR(I);]"this is to avoid a data statement for"
-"                                    a variable in COMMON"
-"NMED and DUNIT default to 1, i.e. one medium and we work in cm"
-
-/MED(1),MED(3)/=0;MED(2)=1;"vacuum in regions 1 and 3, TA in region 2"
-
-%E  "tutor4.mortran"
-ECUT(2)=1.5;"   terminate electron histories at 1.5 MeV in the plate"
-PCUT(2)=0.1;"   terminate   photon histories at 0.1 MeV in the plate"
-"               only needed for region 2 since no transport elsewhere"
-"               ECUT is total energy = 0.989   MeV kinetic energy"
-
-%E
-"---------------------------------------------------------------------"
-"STEP 3   HATCH-CALL                                                  "
-"---------------------------------------------------------------------"
-
-;OUTPUT;('\f  Start tutor4'//' CALL HATCH to get cross-section data'/);
-CALL HATCH;"    pick up cross section data for TA"
-"               data file must be assigned to unit 12"
-
-;OUTPUT AE(1)-PRM, AP(1);
-(/' knock-on electrons can be created and any electron followed down to'
-   /T40,F8.3,' MeV kinetic energy'/
-   ' brem photons can be created and any photon followed down to      ',
-   /T40,F8.3,' MeV ');
-"Compton events can create electrons and photons below these cutoffs"
-
-"---------------------------------------------------------------------"
-"STEP 4  INITIALIZATION-FOR-HOWFAR and HOWNEAR                        "
-"---------------------------------------------------------------------"
-ZBOUND=0.1;"     plate is 1 mm thick"
-
-"---------------------------------------------------------------------"
-"STEP 5  INITIALIZATION-FOR-AUSGAB                                    "
-"---------------------------------------------------------------------"
-DO I=1,3[ESCORE(I)=0.0;]"zero scoring array before starting"
-
-IWATCH=1;     "This determines the type and amount of output"
-              "=1 => print info about each interaction"
-              "=2 => print info about same + each electron step"
-              "=4 => create a file to be displayed by EGS_Windows"
-              " Note that these files can be huge"
-              "IWATCH 1 and 2 outputs to unit 6, 4 to unit 13"
-
-CALL WATCH(-99,IWATCH);  "Initializes calls to AUSGAB for WATCH"
-
-"---------------------------------------------------------------------"
-"STEP 6   DETERMINATION-OF-INICIDENT-PARTICLE-PARAMETERS              "
-"---------------------------------------------------------------------"
-"Define initial variables for 20 MeV beam of electrons incident"
-"perpendicular to the slab"
-
-IQIN=-1;"               incident charge - electrons"
-EIN=20 + PRM;EI=20.0;"    20 MeV kinetic energy"
-/XIN,YIN,ZIN/=0.0;"     incident at origin"
-/UIN,VIN/=0.0;WIN=1.0;" moving along Z axis"
-IRIN=2;"                starts in region 2, could be 1"
-WTIN=1.0;"              weight = 1 since no variance reduction used"
-                        "LATCHI is 0(BLOCK DATA) but not used here"
-"---------------------------------------------------------------------"
-"STEP 7   SHOWER-CALL                                                 "
-"---------------------------------------------------------------------"
-NCASE=10;  "INITIATE THE SHOWER NCASE TIMES"
-
-DO I=1,NCASE [
-    IF((IWATCH ~= 0) & (IWATCH ~= 4))[
-       OUTPUT 1,EI,IQIN,IRIN,XIN,YIN,ZIN,UIN,VIN,WIN,LATCHI,WTIN;
-              (/' INITIAL SHOWER VALUES',T36,':',
-              I5,F9.3,2I4,3F8.3,3F7.3,I10,1PE10.3);
-    ]
-   CALL SHOWER(IQIN,EIN,XIN,YIN,ZIN,UIN,VIN,WIN,IRIN,WTIN);
-   CALL WATCH(-1,IWATCH);  "print a message that this history is over"
-]
-
-"---------------------------------------------------------------------"
-"STEP 8   OUTPUT-OF-RESULTS                                           "
-"---------------------------------------------------------------------"
-ANORM = 100./((EIN+FLOAT(IQIN)*PRM)*FLOAT(NCASE));
- "normalize to % of total input energy"
-TOTAL=0.0;  DO I=1,3[TOTAL=TOTAL+ESCORE(I);]
-OUTPUT (ESCORE(I)*ANORM, I=1,3),TOTAL*ANORM;
-(//' Fraction of energy reflected from plate=',T50,F10.3,'%'/
-' Fraction of energy deposited in plate=',T50,F10.3,'%'/
-' Fraction of energy transmitted through plate=',T50,F10.3,'%'/
-T50,11('-')/' Total fraction of energy accounted for=',
-T50,F10.3,'%'///);
-
-"-----------------------------------------------------------------"
-"STEP 9   finish run                                              "
-"-----------------------------------------------------------------"
-call egs_finish;
-
-
-STOP;END;"end of tutor4 main routine"
-
-%E  "tutor4.mortran"
 "********************************************************************"
 "                                                                    "
 SUBROUTINE AUSGAB(IARG);
@@ -219,51 +103,6 @@ IF(IARG <= 4) [
 RETURN;END;"end of ausgab"
 
 %E  "tutor4.mortran"
-"*********************************************************************"
-"                                                                     "
-SUBROUTINE HOWFAR;
-"                                                                     "
-"    HOWFAR for use with tutor4 (same as with TUTOR1)                 "
-"*********************************************************************"
-$IMPLICIT-NONE;
-$REAL TVAL;
-COMIN/STACK,EPCONT,GEOM/;
-"       COMMON STACK contains X,Y,Z,U,V,W,IR and NP(stack pointer)"
-"       COMMON EPCONT contains IRNEW, USTEP and IDISC"
-"       COMMON GEOM contains ZBOUND"
-
-IF(IR(NP) = 3) [
-   IDISC=1;RETURN;"terminate this history: it is past the plate"
-]
-ELSEIF(IR(NP).EQ.2)["We are in the Ta plate - check the geometry"
-
-   IF(W(NP) > 0.0)[
-      "going forward - consider first since  most frequent"
-      TVAL= (ZBOUND - Z(NP))/W(NP);"TVAL is dist to boundary"
-      "                          in this direction"
-      IF(TVAL > USTEP)[RETURN;"can take currently requested step"]
-      ELSE[USTEP = TVAL; IRNEW=3; RETURN;]
-   ]"END OF W(NP)>0 CASE"
-
-   ELSEIF(W(NP) < 0.0)["going back towards origin"
-      TVAL = -Z(NP)/W(NP); "distance to plane at origin"
-      IF(TVAL > USTEP)[RETURN;"can take currently requested step"]
-      ELSE[USTEP = TVAL; IRNEW = 1; RETURN;]
-   ]"END W(NP)<0 CASE"
-
-   ELSEIF(W(NP) = 0.0)["cannot hit boundary"RETURN;]
-]"end of region 2 case"
-
-ELSEIF(IR(NP) = 1)["in region with source"
-   IF(W(NP) >  0.0)["this must be a source particle on z=0 boundary"
-      USTEP=0.0;IRNEW=2;RETURN;
-   ]
-   ELSE[ "it must be a reflected particle-discard it"
-      IDISC=1;RETURN;
-   ]
-]"end region 1 case"
-
-END;"end of subroutine howfar"
 
 %E  "tutor4.mortran"
 "*********************************************************************"

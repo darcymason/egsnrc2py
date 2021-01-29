@@ -3,7 +3,7 @@ from pathlib import Path
 
 pytest.importorskip("egsnrc2py.egsfortran")  # from numpy.f2py, used while in transition
 from egsnrc2py import egsfortran
-
+from egsnrc2py.egs_home.tutor4 import tutor4
 
 HERE  = Path(__file__).resolve().parent
 TUTOR4_PATH = HERE.parent / "egs_home" / "tutor4" / "tutor4.py"
@@ -16,7 +16,7 @@ class TestTutor4:
         # Ensure proper random initial state
         # (other tests use ranlux)
         egsfortran.init_ranlux(1,0)
-        exec(open(TUTOR4_PATH).read(), globals())
+        tutor4.main()
         captured = capfd.readouterr()
 
         # Test last line of history 10
