@@ -152,7 +152,7 @@ def print_info():
 # # Define a common to pass information to the geometry routine HOWFAR
 # REPLACE {;COMIN/GEOM/;} WITH {;COMMON/GEOM/ZBOUND;$REAL ZBOUND;}
 # REPLACE {$CALL-HOWNEAR(#);} WITH {
-#    ;CALL HOWNEAR({P1},X[np-1],Y[np-1],Z[np-1],IRL);}
+#    ;CALL HOWNEAR({P1},X(NP),Y(NP),Z(NP),IRL);}
 # # Define a COMMON for scoring in AUSGAB
 # REPLACE {;COMIN/SCORE/;} WITH {
 #    ;COMMON/SCORE/ESCORE(3),IWATCH; $INTEGER IWATCH; REAL*8 ESCORE;
@@ -309,34 +309,31 @@ def howfar():
     if ir[np-1] == 3:  # terminate this history: it is past the plate
         epcont.idisc = 1
         return
-    elif ir[np-1] == 2:  # We are in the Ta plate - check the geometry
+    
+    if ir[np-1] == 2:  # We are in the Ta plate - check the geometry
         if w[np-1] > 0.0:  # going forward - consider first since  most frequent
             tval = (zbound - z[np-1]) / w[np-1]  # tval is dist to boundary
             #                                     in this direction
-            if tval > ustep:
-                return  # can take currently requested step]
-            
-            epcont.ustep = tval
-            epcont.irnew = 3
-            return
+            # if tval > ustep, can take requested step, fall through to `return`
+            if tval <= ustep:
+                epcont.ustep = tval
+                epcont.irnew = 3
         elif w[np-1] < 0.0:  # going back towards origin
             tval = -z[np-1] / w[np-1]  # distance to plane at origin
-            if tval > ustep:
-                return  # can take currently requested step]
-            epcont.ustep = tval
-            epcont.irnew = 1
-            return
-        elif w[np-1] == 0.0:  # cannot hit boundaryRETURN;]
-            return
-    # end of region 2 case
-    elif ir[np-1] == 1:  # in region with source
-        if w[np-1] >  0.0:  # this must be a source particle on z=0 boundary
-            epcont.ustep = 0.0
-            epcont.irnew = 2
-            return
+            # if tval > ustep, can take requested step, fall through to `return`
+            if tval <= ustep:
+                epcont.ustep = tval
+                epcont.irnew = 1
+        # else w[np-1] == 0.0, cannot hit boundary
+        return
+   
+    # Not region 3 or 2, must be 1, region with source
+    if w[np-1] >  0.0:  # this must be a source particle on z=0 boundary
+        epcont.ustep = 0.0
+        epcont.irnew = 2
+    else:
         # it must be a reflected particle-discard it
         epcont.idisc = 1
-        return
 
 
 if __name__ == "__main__":

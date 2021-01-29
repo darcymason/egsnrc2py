@@ -23,7 +23,7 @@ Pre-reqs
 --------
 
 * Python 3.9 available and callable with ``python3.9``
-* EGSnrc config set up for ``linux``
+* EGSnrc installed and config set up for ``linux``
 * EGS_HOME set to ``.../egsnrc2py/egsnrc2py/egs_home``
 
 
@@ -32,11 +32,19 @@ Steps
 
 * in ``egsnrc2py/egsnrc2py/egs_home/tutor4`` folder:
 
-* ``make``
-* ``tutor4 -p tutor_data`` to launch the standard EGSnrc mortran/Fortran run
-* ``./make_f2py``.  This creates the ``egsfortran...so`` file and copies it to the
+* ``python3.9 make_f2py.py``.  This compiles the mortran code, runs numpy.f2py
+  to create the ``egsfortran...so`` file, and copies it to the
   main ``egsnrc2py`` folder so ``egsfortran`` is importable as part of the package.
 * ``python3.9 tutor4.py`` to run the Python version
+
+In the above, there may be isses which are best seen using the standard ``make``.
+The tutor4 mortran code here is no longer runnable through the usual EGS run,
+if you wish to see the original output you will need to temporarily set ``EGS_CONFIG``
+back to the user_code directory in the EGSnrc installed location, then in
+that tutor4 folder, run:
+
+* ``make``
+* ``tutor4 -p tutor_data``
 
 ``tutor4`` outputs details of the particles and interactions at each step.  This
 provides a validation baseline as new Python code is introduced.
