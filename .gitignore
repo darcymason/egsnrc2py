@@ -1,11 +1,14 @@
 egsnrc2py.egg-info/*
 egsnrc2py/egsnrc/egsnrc.egg-info/*
 .vscode/*
+egsfortran*
 egsnrc2py/__pycache__/*
-egsnrc2py/tests/__pycache__/*
-egsnrc2py/**/*.so
+egsnrc2py/**/__pycache__/*
+egsnrc2py/egs_home/*/egsfortran.cpython-39-x86_64-linux-gnu.so
+egsnrc2py/HEN_HOUSE/bin/*
 egsnrc2py/egs_home/bin/*
 egsnrc2py/egs_home/**/mortjob.mortran
 egsnrc2py/egs_home/**/*.mortlst
 egsnrc2py/egs_home/**/*.f
 egsnrc2py/egs_home/**/*.io
+

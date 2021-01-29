@@ -1,4 +1,0 @@
-#!/bin/sh -x
-python3.9 -c "code=open('tutor4_linux.f').read();f=open('mod_tutor4.f','w');f.write('      subroutine testxxx\n'+code);f.close()"
-python3.9 -m numpy.f2py -c mod_tutor4.f -m egsfortran
-cp egsfortran* ../../

@@ -98,7 +98,7 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
 
     if iqi == 2:
         # PI-ZERO OPTION
-        # IF(EI <= PI0MSQ) [OUTPUT EI;    corrected Oct 24 1995 e-mail Hideo H 
+        # if EI <= PI0MSQ) [OUTPUT EI;    corrected Oct 24 1995 e-mail Hideo H 
         #                   noted by      Dr.  Muroyama at Nagoya University
         if ei**2 <= pi0msq:
             msg = (
@@ -123,9 +123,9 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
     while np > 0:
         #  DEFAULT FOR $ KERMA-INSERT; IS ; (NULL) 
         if  iq[np-1] == 0:
-            egsfortran.photon(ircode)
+            egsfortran.photon(ircode, howfar)
         else:
-            egsfortran.electr(ircode)
+            egsfortran.electr(ircode, howfar)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -167,127 +167,174 @@ def print_info():
 
 # --------------------------------------------------------------------
 # egsfortran.egs_init()
-egsfortran.egs_set_defaults()
-egsfortran.egs_check_arguments()
-print("COMMON IO")
-print("---------")
-for name in dir(egsfortran.egs_io):
-    if not name.startswith("_"):
-        print(f'   {name} =', getattr(egsfortran.egs_io, name))
+def main():
+    egsfortran.egs_set_defaults()
+    egsfortran.egs_check_arguments()
+    print("COMMON IO")
+    print("---------")
+    for name in dir(egsfortran.egs_io):
+        if not name.startswith("_"):
+            print(f'   {name} =', getattr(egsfortran.egs_io, name))
 
-egsfortran.egs_io.egs_home = f"{str(EGS_HOME) + '/':<128}"  # need trailing "/"
-egsfortran.egs_io.pegs_file = f"{PEGS_FILE:<256}"
-egsfortran.egs_io.user_code = f"{USER_CODE:<64}"
-
-
-print("---After setting pegs_file and user_code --")
-print_info()
-
-egsfortran.egs_init1()
-# ----- end equiv of egs_init
-
-# Gotta be a better way, but for now this works.
-#  Blanking the third line because "NAI" is the default value in this array (??)
-# media is defined as $TYPE, with media[24,1]. $TYPE is macro'd to CHARACTER*4 for F77
-media[0,0] = b'T   '
-media[1,0] = b'A   '
-media[2,0] = b'    '
-# print(media)
-
-# vacuum in regions 1 and 3, TA in region 2
-med[0] = med[2] = 0
-med[1] = 1
-
-# Note take 1 off indices for f2py 0-based in Python
-ecut[2-1]=1.5;  #    terminate electron histories at 1.5 MeV in the plate# 
-pcut[2-1]=0.1;  #    terminate   photon histories at 0.1 MeV in the plate# 
-#                only needed for region 2 since no transport elsewhere# 
-#                ECUT is total energy = 0.989   MeV kinetic energy
+    egsfortran.egs_io.egs_home = f"{str(EGS_HOME) + '/':<128}"  # need trailing "/"
+    egsfortran.egs_io.pegs_file = f"{PEGS_FILE:<256}"
+    egsfortran.egs_io.user_code = f"{USER_CODE:<64}"
 
 
-# ---------------------------------------------------------------------
-# STEP 3   HATCH-CALL                                                  
-# ---------------------------------------------------------------------
+    print("---After setting pegs_file and user_code --")
+    print_info()
 
-logger.info('  Start tutor1\n\n CALL HATCH to get cross-section data\n')
-egsfortran.hatch()  #     pick up cross section data for TA
-#                data file must be assigned to unit 12
+    egsfortran.egs_init1()
+    # ----- end equiv of egs_init
 
-# egsfortran.flushoutput()  # gfortran only - else doesn't print all lines
+    # Gotta be a better way, but for now this works.
+    #  Blanking the third line because "NAI" is the default value in this array (??)
+    # media is defined as $TYPE, with media[24,1]. $TYPE is macro'd to CHARACTER*4 for F77
+    media[0,0] = b'T   '
+    media[1,0] = b'A   '
+    media[2,0] = b'    '
+    # print(media)
 
-logger.info(
-    ' knock-on electrons can be created and any electron followed down to\n'
-    "                                        "
-    f'{ae[0]-prm:8.3} MeV kinetic energy\n'
-    ' brem photons can be created and any photon followed down to      \n'
-    "                                        "
-    f'{ap[0]:8.3} MeV '
-    # Compton events can create electrons and photons below these cutoffs
-)# OUTPUT AE(1)-PRM, AP(1);
+    # vacuum in regions 1 and 3, TA in region 2
+    med[0] = med[2] = 0
+    med[1] = 1
 
-# ---------------------------------------------------------------------
-# STEP 4  INITIALIZATION-FOR-HOWFAR and HOWNEAR                        
-# ---------------------------------------------------------------------
-geom.zbound=0.1  #      plate is 1 mm thick
+    # Note take 1 off indices for f2py 0-based in Python
+    ecut[2-1]=1.5;  #    terminate electron histories at 1.5 MeV in the plate# 
+    pcut[2-1]=0.1;  #    terminate   photon histories at 0.1 MeV in the plate# 
+    #                only needed for region 2 since no transport elsewhere# 
+    #                ECUT is total energy = 0.989   MeV kinetic energy
 
-# ---------------------------------------------------------------------
-# STEP 5  INITIALIZATION-FOR-AUSGAB                                    
-# ---------------------------------------------------------------------
-# Print header for output - which is all AUSGAB does in this case
-# print("                 Kinetic Energy(MeV)  charge  angle w.r.t.Z axis-degrees")
-for i in range(3):
-    escore[i] = 0.0  # zero scoring array before starting
 
-score.iwatch=1  # This determines the type and amount of output
-                # =1 => print info about each interaction
-                # =2 => print info about same + each electron step
-                # =4 => create a file to be displayed by EGS_Windows
-                #  Note that these files can be huge
-                # IWATCH 1 and 2 outputs to unit 6, 4 to unit 13
+    # ---------------------------------------------------------------------
+    # STEP 3   HATCH-CALL                                                  
+    # ---------------------------------------------------------------------
 
-egsfortran.watch(-99,iwatch);   # Initializes calls to AUSGAB for WATCH
-# ---------------------------------------------------------------------
-# STEP 6   DETERMINATION-OF-INICIDENT-PARTICLE-PARAMETERS              
-# ---------------------------------------------------------------------
-# Define initial variables for 20 MeV beam of electrons incident
-# perpendicular to the slab
+    logger.info('  Start tutor1\n\n CALL HATCH to get cross-section data\n')
+    egsfortran.hatch()  #     pick up cross section data for TA
+    #                data file must be assigned to unit 12
 
-# The "in"s are local variables
-iqin=-1  #                incident charge - electrons
-ein=20 + prm
-ei=20.0  #    20 MeV kinetic energy"
-xin = yin = zin = 0.0  #      incident at origin
-uin = vin = 0.0; win=1.0  #  moving along Z axis
-irin=2  #                 starts in region 2, could be 1
-wtin=1.0  #               weight = 1 since no variance reduction used
-# ---------------------------------------------------------------------
-# STEP 7   SHOWER-CALL                                                 
-# ---------------------------------------------------------------------
-# initiate the shower 10 times
+    # egsfortran.flushoutput()  # gfortran only - else doesn't print all lines
 
-ncase=10  # INITIATE THE SHOWER NCASE TIMES
+    logger.info(
+        ' knock-on electrons can be created and any electron followed down to\n'
+        "                                        "
+        f'{ae[0]-prm:8.3} MeV kinetic energy\n'
+        ' brem photons can be created and any photon followed down to      \n'
+        "                                        "
+        f'{ap[0]:8.3} MeV '
+        # Compton events can create electrons and photons below these cutoffs
+    )# OUTPUT AE(1)-PRM, AP(1);
 
-for i in range(ncase):
-    if (iwatch != 0) and (iwatch != 4):
-        print(
-           "\n INITIAL SHOWER VALUES             :"
-           f"    1{ei:9.3f}{iqin:4}{irin:4}"
-           f"{xin:8.3f}{yin:8.3f}{zin:8.3f}"
-           f"{uin:7.3f}{vin:7.3f}{win:7.3f}"  # should be 8.3 like x,y,z but get extra spaces
-           f"{latchi:10}{wtin:10.3E}"
-        )
-        shower(iqin,ein,xin,yin,zin,uin,vin,win,irin,wtin)
-        egsfortran.watch(-1,iwatch)  # print a message that this history is over
+    # ---------------------------------------------------------------------
+    # STEP 4  INITIALIZATION-FOR-HOWFAR and HOWNEAR                        
+    # ---------------------------------------------------------------------
+    geom.zbound=0.1  #      plate is 1 mm thick
 
-# -----------------------------------------------------------------
-# STEP 8   OUTPUT-OF-RESULTS                                       
-# -----------------------------------------------------------------
-# note output is at the end of each history in subroutine ausgab
+    # ---------------------------------------------------------------------
+    # STEP 5  INITIALIZATION-FOR-AUSGAB                                    
+    # ---------------------------------------------------------------------
+    # Print header for output - which is all AUSGAB does in this case
+    # print("                 Kinetic Energy(MeV)  charge  angle w.r.t.Z axis-degrees")
+    for i in range(3):
+        escore[i] = 0.0  # zero scoring array before starting
 
-# -----------------------------------------------------------------
-# STEP 9   finish run                                              
-# -----------------------------------------------------------------
-egsfortran.egs_finish()
+    score.iwatch=1  # This determines the type and amount of output
+                    # =1 => print info about each interaction
+                    # =2 => print info about same + each electron step
+                    # =4 => create a file to be displayed by EGS_Windows
+                    #  Note that these files can be huge
+                    # IWATCH 1 and 2 outputs to unit 6, 4 to unit 13
 
-# Expected hatch report for medium (line for pure Mortran/Fortran tutor1)
-# Medium            1  sige =    1.7946410123827996        1.7870816572288755       monotone =  T T
+    egsfortran.watch(-99,iwatch);   # Initializes calls to AUSGAB for WATCH
+    # ---------------------------------------------------------------------
+    # STEP 6   DETERMINATION-OF-INICIDENT-PARTICLE-PARAMETERS              
+    # ---------------------------------------------------------------------
+    # Define initial variables for 20 MeV beam of electrons incident
+    # perpendicular to the slab
+
+    # The "in"s are local variables
+    iqin=-1  #                incident charge - electrons
+    ein=20 + prm
+    ei=20.0  #    20 MeV kinetic energy"
+    xin = yin = zin = 0.0  #      incident at origin
+    uin = vin = 0.0; win=1.0  #  moving along Z axis
+    irin=2  #                 starts in region 2, could be 1
+    wtin=1.0  #               weight = 1 since no variance reduction used
+    # ---------------------------------------------------------------------
+    # STEP 7   SHOWER-CALL                                                 
+    # ---------------------------------------------------------------------
+    # initiate the shower 10 times
+
+    ncase=10  # INITIATE THE SHOWER NCASE TIMES
+
+    for i in range(ncase):
+        if (iwatch != 0) and (iwatch != 4):
+            print(
+            "\n INITIAL SHOWER VALUES             :"
+            f"    1{ei:9.3f}{iqin:4}{irin:4}"
+            f"{xin:8.3f}{yin:8.3f}{zin:8.3f}"
+            f"{uin:7.3f}{vin:7.3f}{win:7.3f}"  # should be 8.3 like x,y,z but get extra spaces
+            f"{latchi:10}{wtin:10.3E}"
+            )
+            shower(iqin,ein,xin,yin,zin,uin,vin,win,irin,wtin)
+            egsfortran.watch(-1,iwatch)  # print a message that this history is over
+
+    # -----------------------------------------------------------------
+    # STEP 8   OUTPUT-OF-RESULTS                                       
+    # -----------------------------------------------------------------
+    # note output is at the end of each history in subroutine ausgab
+
+    # -----------------------------------------------------------------
+    # STEP 9   finish run                                              
+    # -----------------------------------------------------------------
+    egsfortran.egs_finish()
+
+    # Expected hatch report for medium (line for pure Mortran/Fortran tutor1)
+    # Medium            1  sige =    1.7946410123827996        1.7870816572288755       monotone =  T T
+
+# *********************************************************************
+#                                                                      
+def howfar():
+#                                                                      
+#     HOWFAR for use with tutor4 (same as with TUTOR1)                 
+# *********************************************************************
+# $IMPLICIT-NONE;
+# $REAL TVAL;
+# COMIN/STACK,EPCONT,GEOM/;
+#        COMMON STACK contains X,Y,Z,U,V,W,IR and NP(stack pointer)
+#        COMMON EPCONT contains IRNEW, USTEP and IDISC
+#        COMMON GEOM contains ZBOUND
+
+    if ir[np-1] == 3:  # terminate this history: it is past the plate
+        epcont.idisc = 1
+        return
+    
+    if ir[np-1] == 2:  # We are in the Ta plate - check the geometry
+        if w[np-1] > 0.0:  # going forward - consider first since  most frequent
+            tval = (zbound - z[np-1]) / w[np-1]  # tval is dist to boundary
+            #                                     in this direction
+            # if tval > ustep, can take requested step, fall through to `return`
+            if tval <= ustep:
+                epcont.ustep = tval
+                epcont.irnew = 3
+        elif w[np-1] < 0.0:  # going back towards origin
+            tval = -z[np-1] / w[np-1]  # distance to plane at origin
+            # if tval > ustep, can take requested step, fall through to `return`
+            if tval <= ustep:
+                epcont.ustep = tval
+                epcont.irnew = 1
+        # else w[np-1] == 0.0, cannot hit boundary
+        return
+   
+    # Not region 3 or 2, must be 1, region with source
+    if w[np-1] >  0.0:  # this must be a source particle on z=0 boundary
+        epcont.ustep = 0.0
+        epcont.irnew = 2
+    else:
+        # it must be a reflected particle-discard it
+        epcont.idisc = 1
+
+
+if __name__ == "__main__":
+    main()
