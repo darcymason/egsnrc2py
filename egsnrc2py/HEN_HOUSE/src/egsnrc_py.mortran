@@ -993,8 +993,16 @@ SUBROUTINE ELECTR(IRCODE, howfar);
 "                                     for low energy transport     "
 "******************************************************************"
 $IMPLICIT-NONE;
+!COMMENTS;
+"xxf2py intent(callback) howfar"
 EXTERNAL howfar;
-
+"f2py intent(callback) hownear"
+EXTERNAL hownear;
+"f2py real*8 x,y,z,return_val"
+"f2py integer irl"
+"f2py return_val=hownear(x,y,z,irl)"
+$REAL hownear;
+!NOCOMMENTS;
 $INTEGER IRCODE;
 
 $COMIN-ELECTR; "default replacement produces the following:

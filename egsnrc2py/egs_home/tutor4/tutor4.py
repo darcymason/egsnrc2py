@@ -125,7 +125,11 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
         if  iq[np-1] == 0:
             egsfortran.photon(ircode, howfar)
         else:
-            egsfortran.electr(ircode, howfar)
+            # Note, callbacks have to be passed as extra parameters
+            # even if not in the mortran call arguments,
+            # unless intent(callback,hide) is used in f2py comments,
+            # in which case, need to set `egsfortran.hownear = hownear`
+            egsfortran.electr(ircode, howfar, hownear)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -152,7 +156,7 @@ def print_info():
 # # Define a common to pass information to the geometry routine HOWFAR
 # REPLACE {;COMIN/GEOM/;} WITH {;COMMON/GEOM/ZBOUND;$REAL ZBOUND;}
 # REPLACE {$CALL-HOWNEAR(#);} WITH {
-#    ;CALL HOWNEAR({P1},X(NP),Y(NP),Z(NP),IRL);}
+#    ;{P1} = HOWNEAR({P1},X(NP),Y(NP),Z(NP),IRL);}
 # # Define a COMMON for scoring in AUSGAB
 # REPLACE {;COMIN/SCORE/;} WITH {
 #    ;COMMON/SCORE/ESCORE(3),IWATCH; $INTEGER IWATCH; REAL*8 ESCORE;
@@ -190,6 +194,9 @@ def main():
     # Gotta be a better way, but for now this works.
     #  Blanking the third line because "NAI" is the default value in this array (??)
     # media is defined as $TYPE, with media[24,1]. $TYPE is macro'd to CHARACTER*4 for F77
+    # 
+    # f2py message explains it:
+    #  character*4 media(24,1) is considered as "character media(24,1,4)"; "intent(c)" is forced
     media[0,0] = b'T   '
     media[1,0] = b'A   '
     media[2,0] = b'    '
@@ -296,15 +303,34 @@ def main():
 # *********************************************************************
 #                                                                      
 def howfar():
-#                                                                      
-#     HOWFAR for use with tutor4 (same as with TUTOR1)                 
-# *********************************************************************
-# $IMPLICIT-NONE;
-# $REAL TVAL;
-# COMIN/STACK,EPCONT,GEOM/;
-#        COMMON STACK contains X,Y,Z,U,V,W,IR and NP(stack pointer)
-#        COMMON EPCONT contains IRNEW, USTEP and IDISC
-#        COMMON GEOM contains ZBOUND
+    """Can particle can go distance ustep without crossing a boundary
+
+    The following is a general specification of HOWFAR               
+    Given a particle at (X,Y,Z) in region IR and going in direction 
+    (U,V,W), this routine answers the question, can the particle go   
+    a distance USTEP without crossing a boundary?                      
+            If yes, it merely returns                                  
+            If no, it sets USTEP=distance to boundary in the current   
+            direction and sets IRNEW to the region number   on the     
+            far side of the boundary (this can be messy in general!)   
+                                                                       
+    The user can terminate a history by setting IDISC>0. Here we       
+    terminate all histories which enter region 3 or are going          
+    backwards in region 1                                              
+                                                                       
+                    |               |                                  
+    REGION 1        |   REGION 2    |       REGION 3                   
+                    |               |                                  
+    e- =========>   |               | e- or photon ====>               
+                    |               |                                  
+    vacuum          |     Ta        |       vacuum                     
+
+    $REAL TVAL;
+    COMIN/STACK,EPCONT,GEOM/;
+           COMMON STACK contains X,Y,Z,U,V,W,IR and NP(stack pointer)
+           COMMON EPCONT contains IRNEW, USTEP and IDISC
+           COMMON GEOM contains ZBOUND
+    """
 
     if ir[np-1] == 3:  # terminate this history: it is past the plate
         epcont.idisc = 1
@@ -334,6 +360,35 @@ def howfar():
     else:
         # it must be a reflected particle-discard it
         epcont.idisc = 1
+
+
+def hownear(x, y, z, irl):
+    """Determine distance to the closest boundary
+    
+    Given a particle at (x,y,z) in region irl, HOWNEAR answers the    
+    question, What is the distance to the closest boundary?           
+                                                                         
+    In general this can be a complex subroutine.                       
+    
+    Parameters
+    ----------
+    x,y,z: REAL
+        Position of particle in region irl
+    irl: INTEGER
+        Current region
+
+    Returns
+    -------
+    REAL
+        Distance to the closest boundary
+    """
+    # print(f"In Python hownear, with pos = ({x}, {y}, {z}), irl={irl}")
+
+    if irl == 2:  # We are in the Ta plate - check the geometry
+        return min(z, (zbound - z) )  # 'terp'
+    
+    # else in region 1 or 3, can't return anything sensible
+    raise ValueError(f'Called hownear in region {irl}')
 
 
 if __name__ == "__main__":

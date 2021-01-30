@@ -1,4 +1,9 @@
 %C80
+%L
+!INDENT M 4;    "indent each MORTRAN nesting level by 4"
+!INDENT F 2;    "indent each FORTRAN nesting level by 2"
+"  !COMMENTS;   keep off here, but use whenever need f2py signatures"
+
 "#############################################################################"
 "                                                                             "
 "  EGSnrc tutor4 application                                                  "
@@ -47,13 +52,22 @@ REPLACE {$MXSTACK} WITH {15}"less than 15 particles on stack at once"
 
 "Define a common to pass information to the geometry routine HOWFAR"
 REPLACE {;COMIN/GEOM/;} WITH {;COMMON/GEOM/ZBOUND;$REAL ZBOUND;}
+
 REPLACE {$CALL-HOWNEAR(#);} WITH {
-   ;CALL HOWNEAR({P1},X(NP),Y(NP),Z(NP),IRL);}
+   ";$egs_info('(a,3e16.8)','HOWNEAR inputs=',x(np),y(np),z(np));"
+   ;{P1} = hownear(x(np),y(np),z(np),irl);
+   "$egs_info('(a,e16.8)', 'Return value=', {P1});"
+   }
+   
 "Define a COMMON for scoring in AUSGAB"
 REPLACE {;COMIN/SCORE/;} WITH {
    ;COMMON/SCORE/ESCORE(3),IWATCH; $INTEGER IWATCH; REAL*8 ESCORE;
 }
-;COMIN/BOUNDS,GEOM,MEDIA,MISC,SCORE,STACK,THRESH,USEFUL/;"NOTE ; BEFORE COMIN"
+
+" Dummy subroutine to keep definitions of common blocks"
+SUBROUTINE dummyxxx;
+
+;COMIN/BOUNDS,GEOM,MEDIA,MISC,SCORE,STACK,THRESH,USEFUL/;
 "       The above expands into a series of COMMON statements"
 "       BOUNDS contains ECUT and PCUT"
 "       GEOM passes info to our HOWFAR routine"
@@ -64,9 +78,7 @@ REPLACE {;COMIN/SCORE/;} WITH {
 "       THRESH contains various thresholds"
 "       USEFUL contains PRM"
 
-%L
-!INDENT M 4;    "indent each MORTRAN nesting level by 4"
-!INDENT F 2;    "indent each FORTRAN nesting level by 2"
+end;
 
 "********************************************************************"
 "                                                                    "
@@ -101,34 +113,3 @@ IF(IARG <= 4) [
    ESCORE(IRL)=ESCORE(IRL)+EDEP;
 ]
 RETURN;END;"end of ausgab"
-
-%E  "tutor4.mortran"
-
-%E  "tutor4.mortran"
-"*********************************************************************"
-"                                                                     "
-SUBROUTINE HOWNEAR(tperp, x, y, z, irl);
-"                                                                     "
-" The following is a general specification of HOWNEAR                 "
-"   Given a particle at (x,y,z) in region irl, HOWNEAR answers the    "
-"   question, What is the distance to the closest boundary?           "
-"                                                                     "
-"  In general this can be a complex subroutine.                       "
-"  Note that this subroutine must be linked to $CALL-HOWNEAR(#)       "
-"                                                                     "
-"*********************************************************************"
-$IMPLICIT-NONE;
-$REAL tperp, x,y,z;
-$INTEGER irl;
-
-;COMIN/GEOM/; "       COMMON GEOM contains ZBOUND"
-
-IF(irl = 3) [OUTPUT;('Called HOWNEAR in region 3'); RETURN;]
-
-ELSEIF(irl = 2)["We are in the Ta plate - check the geometry"
-    tperp = min(z, (ZBOUND - z) );
-]
-
-ELSEIF(irl = 1)[OUTPUT;('Called HOWNEAR in region 1'); RETURN;]
-
-END;"end of subroutine hownear"
