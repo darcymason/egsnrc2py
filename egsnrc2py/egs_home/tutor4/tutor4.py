@@ -390,6 +390,56 @@ def hownear(x, y, z, irl):
     # else in region 1 or 3, can't return anything sensible
     raise ValueError(f'Called hownear in region {irl}')
 
+def compute_drange(eke1,eke2,lelke1,elke1,elke2):
+    """Computes path-length traveled going from energy `eke1` to `eke2`
+
+    both energies being in the same interpolation bin, 
+    given by `lelke1`. `elke1` and `elke2` are the logarithms of
+    'eke1' and `eke2`. The expression is based on logarithmic interpolation as
+    used in EGSnrc (i.e. dedx = a + b*Log(E) ) and a power series expansion
+    of the ExpIntegralEi function that is the result of the integration.
+
+    Returns
+    -------
+    REAL
+        path-length traveled going from energy `eke1` to `eke2`
+
+    """
+    fedep = 1 - eke2/eke1
+
+    # evaluate the logarithm of the midpoint energy
+    elktmp = 0.5*(elke1+elke2+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
+            
+    lelktmp = lelke1
+    if lelec < 0:
+        # $EVALUATE dedxmid USING ededx(elktmp)
+        dedxmid = ededx1[lelktmp,medium]*elktmp+ ededx0[lelktmp,medium]
+        dedxmid = 1/dedxmid
+        aux = ededx1[lelktmp,medium]*dedxmid
+        #  aux = ededx1(lelktmp,medium)/dedxmid"
+    else:
+        # $EVALUATE dedxmid USING pdedx(elktmp)
+        dedxmid = pdedx1[lelktmp,medium]*elktmp+ pdedx0[lelktmp,medium]
+        dedxmid = 1/dedxmid
+        aux = pdedx1[lelktmp,medium]*dedxmid
+        #  aux = pdedx1(lelktmp,medium)/dedxmid"
+
+    aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
+    
+    return fedep*eke1*dedxmid*(1+aux)
+
+
+# dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
+# dedxmid = 1/dedxmid
+# aux = ededx1(lelktmp,medium)*dedxmid
+# # aux = ededx1(lelktmp,medium)/dedxmid
+# else:
+# dedxmid = pdedx1[lelktmp,medium]*elktmp+ pdedx0[lelktmp,medium]  # EVALUATE dedxmid USING pdedx(elktmp)
+# dedxmid = 1/dedxmid
+# aux = pdedx1(lelktmp,medium)*dedxmid
+
+
+
 
 if __name__ == "__main__":
     main()

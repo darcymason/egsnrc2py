@@ -58,7 +58,36 @@ REPLACE {$CALL-HOWNEAR(#);} WITH {
    ;{P1} = hownear(x(np),y(np),z(np),irl);
    "$egs_info('(a,e16.8)', 'Return value=', {P1});"
    }
-   
+
+REPLACE {$COMPUTE-DRANGE(#,#,#,#,#,#);} WITH
+"        ============================="
+{
+  $egs_info('(a,2F14.9,I4,2F14.9)','COMPUTE-DRANGE in',
+  {P1},{P2},{P3},{P4},{P5});
+  fedep = 1 - {P2}/{P1};
+  elktmp = 0.5*({P4}+{P5}+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)));
+           " the above evaluates the logarithm of the midpoint energy"
+  lelktmp = {P3};
+  IF(lelec < 0) [
+      $EVALUATE dedxmid USING ededx(elktmp);
+      dedxmid = 1/dedxmid;
+      aux = ededx1(lelktmp,medium)*dedxmid;
+      "aux = ededx1(lelktmp,medium)/dedxmid;"
+  ]
+  ELSE [
+      $EVALUATE dedxmid USING pdedx(elktmp);
+      dedxmid = 1/dedxmid;
+      aux = pdedx1(lelktmp,medium)*dedxmid;
+      "aux = pdedx1(lelktmp,medium)/dedxmid;"
+  ]
+  aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6;
+  "{P6} = fedep*{P1}/dedxmid*(1+aux);"
+  {P6} = fedep*{P1}*dedxmid*(1+aux);
+  $egs_info('(a,F17.9)','COMPUTE-DRANGE out',{P6});
+}
+;
+
+
 "Define a COMMON for scoring in AUSGAB"
 REPLACE {;COMIN/SCORE/;} WITH {
    ;COMMON/SCORE/ESCORE(3),IWATCH; $INTEGER IWATCH; REAL*8 ESCORE;
