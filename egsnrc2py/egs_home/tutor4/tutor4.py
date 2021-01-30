@@ -383,17 +383,12 @@ def hownear(x, y, z, irl):
         Distance to the closest boundary
     """
     # print(f"In Python hownear, with pos = ({x}, {y}, {z}), irl={irl}")
-    if irl == 3:
-        print('Called hownear in region 3')
 
-    elif irl == 2:  # We are in the Ta plate - check the geometry
-        tperp = min(z, (zbound - z) )
-
-    else:  # irl == 1
-        print('Called hownear in region 1')
-
-    # print(f"Python returning {tperp}")
-    return tperp
+    if irl == 2:  # We are in the Ta plate - check the geometry
+        return min(z, (zbound - z) )  # 'terp'
+    
+    # else in region 1 or 3, can't return anything sensible
+    raise ValueError(f'Called hownear in region {irl}')
 
 
 if __name__ == "__main__":
