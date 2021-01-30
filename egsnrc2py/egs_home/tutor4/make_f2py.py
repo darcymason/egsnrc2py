@@ -55,19 +55,18 @@ with working_dir(HERE):
 
     print(f"Running f2py on {USER_CODE_FORTRAN}")
     proc = subprocess.run(
-        f"python3.9 -m numpy.f2py -c {USER_CODE_FORTRAN} -m {LIB_NAME}".split(),
-        capture_output=True, encoding="utf8"
+        f"python3.9 -m numpy.f2py --quiet -c {USER_CODE_FORTRAN} -m {LIB_NAME}".split(),
+        # capture_output=True, encoding="utf8"
     )
     if proc.returncode != 0:
         print("Error in numpy.f2py")
+        print(f"{LIB_NAME} not created.  Stopping.")
         print(proc.stderr)
-        sys.exit(-1)
-    
-
-    filenames = HERE.glob(f"{LIB_NAME}*")
-    for filename in filenames:
-        print(f"Copying {filename.name} shared lib to egsnrc2py packaga")
-        shutil.copy(filename, HERE.parent.parent)
+    else:
+        filenames = HERE.glob(f"{LIB_NAME}*")
+        for filename in filenames:
+            print(f"Copying {filename.name} shared lib to egsnrc2py package")
+            shutil.copy(filename, HERE.parent.parent)
     # python3.9 -c ";f=
     # python3.9 -m numpy.f2py -c mod_tutor4.f -m egsfortran
     # cp egsfortran* ../../
