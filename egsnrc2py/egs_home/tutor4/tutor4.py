@@ -171,7 +171,7 @@ def print_info():
 
 # --------------------------------------------------------------------
 # egsfortran.egs_init()
-def main():
+def init():
     egsfortran.egs_set_defaults()
     egsfortran.egs_check_arguments()
     print("COMMON IO")
@@ -185,8 +185,8 @@ def main():
     egsfortran.egs_io.user_code = f"{USER_CODE:<64}"
 
 
-    print("---After setting pegs_file and user_code --")
-    print_info()
+    # print("---After setting pegs_file and user_code --")
+    # print_info()
 
     egsfortran.egs_init1()
     # ----- end equiv of egs_init
@@ -260,7 +260,10 @@ def main():
     # Define initial variables for 20 MeV beam of electrons incident
     # perpendicular to the slab
 
+
+def main():
     # The "in"s are local variables
+    init()
     iqin=-1  #                incident charge - electrons
     ein=20 + prm
     ei=20.0  #    20 MeV kinetic energy"
@@ -390,7 +393,8 @@ def hownear(x, y, z, irl):
     # else in region 1 or 3, can't return anything sensible
     raise ValueError(f'Called hownear in region {irl}')
 
-def compute_drange(eke1,eke2,lelke1,elke1,elke2):
+
+def compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2):
     """Computes path-length traveled going from energy `eke1` to `eke2`
 
     both energies being in the same interpolation bin, 
@@ -399,8 +403,16 @@ def compute_drange(eke1,eke2,lelke1,elke1,elke2):
     used in EGSnrc (i.e. dedx = a + b*Log(E) ) and a power series expansion
     of the ExpIntegralEi function that is the result of the integration.
 
+    Parameters
+    ----------
+    lelec: INTEGER
+        Charge of the particle, either -1 or +1
+    
+    medium: INTEGER
+        Current medium
+
     Returns
-    -------
+        -------
     REAL
         path-length traveled going from energy `eke1` to `eke2`
 
@@ -409,8 +421,11 @@ def compute_drange(eke1,eke2,lelke1,elke1,elke2):
 
     # evaluate the logarithm of the midpoint energy
     elktmp = 0.5*(elke1+elke2+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
-            
-    lelktmp = lelke1
+    
+    # *** -1 for 0-based in Python
+    lelktmp = lelke1 - 1 
+    medium -= 1
+    
     if lelec < 0:
         # $EVALUATE dedxmid USING ededx(elktmp)
         dedxmid = ededx1[lelktmp,medium]*elktmp+ ededx0[lelktmp,medium]
