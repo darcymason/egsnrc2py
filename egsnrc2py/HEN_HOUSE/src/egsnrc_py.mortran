@@ -1002,6 +1002,12 @@ EXTERNAL hownear;
 "f2py integer irl"
 "f2py return_val=hownear(x,y,z,irl)"
 $REAL hownear;
+"xxf2py intent(callback) calc_tstep_from_demfp"
+"EXTERNAL calc_tstep_from_demfp;
+"xxf2py real*8 demfp,sig, eke, elke"
+"xxf2py integer qel, lelec, medium, lelke"
+"xxf2py tstep=calc_tstep_from_demfp(qel,lelec,medium,lelke,demfp,sig,eke,elke)"
+"$REAL calc_tstep_from_demfp;
 !NOCOMMENTS;
 $INTEGER IRCODE;
 
