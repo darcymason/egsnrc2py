@@ -62,7 +62,7 @@
 # \$(USER_CODE).mortran \$(RANDOM).mortran \$(EGS_SOURCEDIR)nrcaux.mortran 
 # \$(MACHINE_MORTRAN) \$(EGS_SOURCEDIR)egsnrc.mortran"
 SOURCES = \
-       $(EGS_SOURCEDIR)egsnrc.macros \
+       $(PY_EGS)egsnrc.macros \
        $(MACHINE_MACROS) \
        $(RANDOM).macros\
        $(EGS_SOURCEDIR)transportp.macros\
