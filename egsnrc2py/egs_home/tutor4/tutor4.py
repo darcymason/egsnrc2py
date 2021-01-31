@@ -129,7 +129,7 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
             # even if not in the mortran call arguments,
             # unless intent(callback,hide) is used in f2py comments,
             # in which case, need to set `egsfortran.hownear = hownear`
-            egsfortran.electr(ircode, howfar, hownear) # , calc_tstep_from_demfp)
+            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -264,7 +264,7 @@ def init():
 def main():
     # The "in"s are local variables
     init()
-    iqin=-1  #                incident charge - electrons
+    iqin=1  #                incident charge - electrons
     ein=20 + prm
     ei=20.0  #    20 MeV kinetic energy"
     xin = yin = zin = 0.0  #      incident at origin

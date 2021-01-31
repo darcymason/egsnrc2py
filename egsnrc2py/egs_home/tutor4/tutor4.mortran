@@ -59,7 +59,7 @@ REPLACE {$CALL-HOWNEAR(#);} WITH {
    "$egs_info('(a,e16.8)', 'Return value=', {P1});"
    }
 
-REPLACE {$COMPUTE-DRANGE(#,#,#,#,#,#);} WITH
+REPLACE {$XXXCOMPUTE-DRANGE(#,#,#,#,#,#);} WITH
 "        ============================="
 {
   $egs_info('(a,I4, I4, 2F14.9,I4,2F14.9)','in ',
@@ -86,6 +86,58 @@ REPLACE {$COMPUTE-DRANGE(#,#,#,#,#,#);} WITH
   $egs_info('(a,F14.9)','out ',{P6});
 }
 ;
+
+REPLACE {$XXXCALCULATE-TSTEP-FROM-DEMFP;} WITH  "Remove XXX for generating test data"
+"        ============================"
+{;
+  IF( compute_tstep ) [
+    $egs_info('(a,4I4,4F16.12)','in ',
+    qel,lelec, medium, lelke, demfp, sig, eke, elke);
+    total_de = demfp/sig; fedep = total_de;
+    ekef  = eke - fedep;
+    IF( ekef <= E_array(1,medium) ) [ tstep = vacdst; ]
+    ELSE
+    [
+      elkef = Log(ekef);
+      $SET INTERVAL elkef,eke;
+      IF( lelkef = lelke )
+      [       " initial and final energy are in the same interpolation bin "
+          $COMPUTE-DRANGE(eke,ekef,lelke,elke,elkef,tstep);
+      ]
+      ELSE
+      [   " initial and final energy are in different interpolation bins, "
+          " calc range from ekef to E(lelkef+1) and from E(lelke) to eke  "
+          " and add the pre-calculated range from E(lelkef+1) to E(lelke) "
+          ekei = E_array(lelke,medium);
+          elkei = (lelke - eke0(medium))/eke1(medium);
+          $COMPUTE-DRANGE(eke,ekei,lelke,elke,elkei,tuss);
+          ekei = E_array(lelkef+1,medium);
+          elkei = (lelkef + 1 - eke0(medium))/eke1(medium);
+          $COMPUTE-DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep);
+          tstep=tstep+tuss+
+                  range_ep(qel,lelke,medium)-range_ep(qel,lelkef+1,medium);
+      ]
+    ]
+    total_tstep = tstep;
+    $egs_info('(a,F14.9)','out ',tstep);
+    compute_tstep = .false.;
+  ]
+  tstep = total_tstep/rhof;  " non-default density scaling "
+}
+;
+
+REPLACE {$CALCULATE-TSTEP-FROM-DEMFP;} WITH
+"        ============================"
+{;
+  IF( compute_tstep ) [
+     tstep = calc_tstep_from_demfp(qel,lelec,medium,lelke,demfp,sig,eke,elke);
+     total_tstep = tstep;
+     compute_tstep = .false.;
+  ]
+  tstep = total_tstep/rhof;  " non-default density scaling "
+}
+;
+
 
 
 "Define a COMMON for scoring in AUSGAB"
