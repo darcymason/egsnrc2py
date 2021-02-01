@@ -129,7 +129,7 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
             # even if not in the mortran call arguments,
             # unless intent(callback,hide) is used in f2py comments,
             # in which case, need to set `egsfortran.hownear = hownear`
-            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp)
+            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp, compute_eloss)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -495,6 +495,7 @@ def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke, total
 
 def compute_eloss(lelec, medium, step, eke, elke, lelke):
     # ** 0-based
+    # print("fn: ",lelec, medium, step, eke, elke, lelke)
     medium_m1 = medium - 1 
     lelke_m1 = lelke - 1
     

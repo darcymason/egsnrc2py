@@ -144,6 +144,13 @@ REPLACE {$CALCULATE-TSTEP-FROM-DEMFP;} WITH
 REPLACE {$COMPUTE-ELOSS(#,#,#,#,#);} WITH
 "        =========================="
 {;
+  {P5} = compute_eloss(lelec, medium, {P1},{P2},{P3},{P4});
+}
+;
+
+REPLACE {$XXXCOMPUTE-ELOSS(#,#,#,#,#);} WITH
+"        =========================="
+{;
   $egs_info('(a, 2I4, 3E25.16e2,I4)','in ',
     lelec, medium, {P1},{P2},{P3},{P4});
   IF( lelec < 0 ) [
@@ -166,6 +173,10 @@ REPLACE {$COMPUTE-ELOSS(#,#,#,#,#);} WITH
   $egs_info('(a,E25.16e2)','out ',{P5});
 }
 ;
+
+
+
+
 
 "Define a COMMON for scoring in AUSGAB"
 REPLACE {;COMIN/SCORE/;} WITH {
