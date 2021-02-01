@@ -6,6 +6,7 @@ from egsnrc2py import egsfortran
 from egsnrc2py.egs_home.tutor4 import tutor4
 
 HERE  = Path(__file__).resolve().parent
+TEST_DATA = HERE / "data"
 TUTOR4_PATH = HERE.parent / "egs_home" / "tutor4" / "tutor4.py"
 
 # @pytest.mark.skipif(sys.platform=="win32")
@@ -56,7 +57,7 @@ class TestTutor4:
             "  0.259  0.924         0 1.000E+00"
         ) in last_line_hist10
         # Ignore test outputs we might be generating
-        while (secondlast := next(rev_lines_iter)).startswith(("in", "out")):
+        while (secondlast := next(rev_lines_iter)).startswith(("in", "out", "fn:")):
             pass
         expected_2nd_last_hist10 = (
             "17.150  -1   2   0.006  -0.005   0.063 -0.240 -0.009  0.971" 
@@ -68,9 +69,23 @@ class TestTutor4:
         # Compare against ones captured from TUTOR4 run with extra prints
         tutor4.init()  # get all data loaded
         # Known inputs for compute-drange from Mortran tutor4 run
-        for inputs, expected in known_in_out(HERE / "compute-drange.txt",
+        for inputs, expected in known_in_out(TEST_DATA / "compute-drange.txt",
             (int, int, float, float, int, float, float), float
         ):
             # compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2)
             got = tutor4.compute_drange(*inputs)
+            assert got == pytest.approx(expected,abs=0.0000001)
+
+    def test_calc_tstep(self):
+        "Calc correct values for modified $CALCULATE-TSTEP-FROM-DEMFP in Python"
+        # Compare against ones captured from TUTOR4 run with extra prints
+        tutor4.init()  # get all data loaded
+        # Known inputs for compute-drange from Mortran tutor4 run
+        for inputs, expected in known_in_out(TEST_DATA / "calc-tstep.txt",
+            (int, int, int, int, float, float, float, float, float), float
+        ):
+            # 
+            print("in ", ",".join(str(x) for x in inputs))
+            got = tutor4.calc_tstep_from_demfp(*inputs)
+            
             assert got == pytest.approx(expected,abs=0.0000001)

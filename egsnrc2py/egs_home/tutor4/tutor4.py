@@ -3,7 +3,7 @@ from pathlib import Path
 from egsnrc2py import egsfortran
 import logging
 import numpy  # cannot use `np` as is an EGS var!!
-
+from math import log  # for calculate_tstep_...
 
 # Get all common blocks
 from egsnrc2py.commons import *  
@@ -129,7 +129,7 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
             # even if not in the mortran call arguments,
             # unless intent(callback,hide) is used in f2py comments,
             # in which case, need to set `egsfortran.hownear = hownear`
-            egsfortran.electr(ircode, howfar, hownear)
+            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -174,11 +174,11 @@ def print_info():
 def init():
     egsfortran.egs_set_defaults()
     egsfortran.egs_check_arguments()
-    print("COMMON IO")
-    print("---------")
-    for name in dir(egsfortran.egs_io):
-        if not name.startswith("_"):
-            print(f'   {name} =', getattr(egsfortran.egs_io, name))
+    # print("COMMON IO")
+    # print("---------")
+    # for name in dir(egsfortran.egs_io):
+    #     if not name.startswith("_"):
+    #         print(f'   {name} =', getattr(egsfortran.egs_io, name))
 
     egsfortran.egs_io.egs_home = f"{str(EGS_HOME) + '/':<128}"  # need trailing "/"
     egsfortran.egs_io.pegs_file = f"{PEGS_FILE:<256}"
@@ -423,7 +423,7 @@ def compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2):
     elktmp = 0.5*(elke1+elke2+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
     
     # *** -1 for 0-based in Python
-    lelktmp = lelke1 - 1 
+    lelktmp = lelke1 - 1 # was = lelke1
     medium -= 1
     
     if lelec < 0:
@@ -437,23 +437,60 @@ def compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2):
         dedxmid = pdedx1[lelktmp,medium]*elktmp+ pdedx0[lelktmp,medium]
         dedxmid = 1/dedxmid
         aux = pdedx1[lelktmp,medium]*dedxmid
-        #  aux = pdedx1(lelktmp,medium)/dedxmid"
+        #  aux = pdedx1(lelktmp,medium)/dedxmid
 
     aux = aux*(1+2*aux)*(fedep/(2-fedep))**2/6
     
     return fedep*eke1*dedxmid*(1+aux)
 
 
-# dedxmid = ededx1[Lelktmp,MEDIUM]*elktmp+ ededx0[Lelktmp,MEDIUM]  # EVALUATE dedxmid USING ededx(elktmp)
-# dedxmid = 1/dedxmid
-# aux = ededx1(lelktmp,medium)*dedxmid
-# # aux = ededx1(lelktmp,medium)/dedxmid
-# else:
-# dedxmid = pdedx1[lelktmp,medium]*elktmp+ pdedx0[lelktmp,medium]  # EVALUATE dedxmid USING pdedx(elktmp)
-# dedxmid = 1/dedxmid
-# aux = pdedx1(lelktmp,medium)*dedxmid
+def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke, total_de):
+    """Calculate path length to the next discrete interaction
 
+    Once the sub-threshold processes energy loss to the next discrete 
+    interaction is determined, the corresponding path-length has to be
+    calculated. This is done by this function. This function         
+    assumes the energy at the begining to be `eke`, the logarithm of it 
+    `elke`, `lelke` - the corresponding interpolation index and makes     
+    use of `compute_drange`.
+    """
+    # in: medium, qel, leklef (for compute-drange) 
+    # in/out:  compute_tstep, total_tstep,
+    # global e_array, epcont.eke, epcont.elke, bounds.vacdst, eke0[], eke1[]
 
+    # print("fn:", ",".join(str(x) for x in (qel,lelec, medium, demfp, sig, eke, elke, total_de)) )
+    fedep = total_de
+    ekef  = eke - fedep
+
+    # *** 0-based array
+    medium_m1 = medium - 1
+    if  ekef <= e_array[1-1,medium_m1]:
+        tstep = vacdst 
+    else:
+        elkef = log(ekef)
+        # Unhandled macro '$ SET INTERVAL elkef,eke;'->
+        # Below line from tutor4_linux.f
+        lelkef=int(eke1[medium_m1]*elkef+eke0[medium_m1])  # XXX note fortran had implicit real->int conversion
+        if  lelkef == lelke:
+            #  initial and final energy are in the same interpolation bin 
+            # --- Inline replace: $ COMPUTE_DRANGE(eke,ekef,lelke,elke,elkef,tstep); -----
+            tstep = compute_drange(lelec, medium, eke,ekef,lelke,elke,elkef)
+        else:
+            #  initial and final energy are in different interpolation bins, 
+            #  calc range from ekef to E(lelkef+1) and from E(lelke) to eke  
+            #  and add the pre-calculated range from E(lelkef+1) to E(lelke) 
+            ekei = e_array[lelke-1,medium_m1]
+            elkei = (lelke - eke0[medium_m1])/eke1[medium_m1]
+            # --- Inline replace: $ COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss); -----
+            tuss = compute_drange(lelec, medium, eke,ekei,lelke,elke,elkei)
+            ekei = e_array[lelkef+1-1,medium_m1]  # 0-based -1
+            elkei = (lelkef + 1 - eke0[medium_m1])/eke1[medium_m1]
+            # --- Inline replace: $ COMPUTE_DRANGE(ekei,ekef,lelkef,elkei,elkef,tstep); -----
+            tstep = compute_drange(lelec, medium, ekei,ekef,lelkef,elkei,elkef)
+            # Note: range_ep IS 0-based already in first dimn
+            tstep=tstep+tuss+range_ep[qel,lelke-1,medium_m1]-range_ep[qel,lelkef+1-1,medium_m1]
+
+    return tstep
 
 
 if __name__ == "__main__":

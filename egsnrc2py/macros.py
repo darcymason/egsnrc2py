@@ -62,7 +62,11 @@ func_signatures = {
     # $COMPUTE_DRANGE(eke,ekei,lelke,elke,elkei,tuss)
     'compute_drange': ("eke1,eke2,lelke1,elke1,elke2".split(","), (5,)),
     'randomset': ([], (0,)),  # the one argument is output only
-
+    # compute_eloss(tustep, eke, elke, lelke, de)
+    #              (tuss, eketmp, elktmp, lelktmp, de)
+    #              (tvstep, eke, elke, lelke, de)
+    #              (tvstep, eke, elke, lelke, de)
+    'compute_eloss': ("step,eke,elke,lelke".split(","), (4,)),
 }
 
 dont_inline = ["randomset"]
