@@ -57,7 +57,7 @@ class TestTutor4:
             "  0.259  0.924         0 1.000E+00"
         ) in last_line_hist10
         # Ignore test outputs we might be generating
-        while (secondlast := next(rev_lines_iter)).startswith(("in", "out")):
+        while (secondlast := next(rev_lines_iter)).startswith(("in", "out", "fn:")):
             pass
         expected_2nd_last_hist10 = (
             "17.150  -1   2   0.006  -0.005   0.063 -0.240 -0.009  0.971" 
@@ -82,7 +82,7 @@ class TestTutor4:
         tutor4.init()  # get all data loaded
         # Known inputs for compute-drange from Mortran tutor4 run
         for inputs, expected in known_in_out(TEST_DATA / "calc-tstep.txt",
-            (int, int, int, int, float, float, float, float), float
+            (int, int, int, int, float, float, float, float, float), float
         ):
             # 
             print("in ", ",".join(str(x) for x in inputs))

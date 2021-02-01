@@ -25,6 +25,7 @@ HEN_HOUSE = Path(os.environ["HEN_HOUSE"])
 COMPILE_USER_CODE = HEN_HOUSE / "scripts" / "compile_user_code"
 PY_EGS = str(HERE.parent.parent / "HEN_HOUSE" / "src") + "/"
 LIB_NAME = "egsfortran"
+F2PY_OPTIONS = "--quiet --debug"
 
 os.environ['PY_EGS'] = PY_EGS
 print(f"Set environment variable PY_EGS to {PY_EGS}")
@@ -55,7 +56,7 @@ with working_dir(HERE):
 
     print(f"Running f2py on {USER_CODE_FORTRAN}")
     proc = subprocess.run(
-        f"python3.9 -m numpy.f2py --quiet -c {USER_CODE_FORTRAN} -m {LIB_NAME}".split(),
+        f"python3.9 -m numpy.f2py {F2PY_OPTIONS} -c {USER_CODE_FORTRAN} -m {LIB_NAME}".split(),
         # capture_output=True, encoding="utf8"
     )
     if proc.returncode != 0:

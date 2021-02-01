@@ -174,11 +174,11 @@ def print_info():
 def init():
     egsfortran.egs_set_defaults()
     egsfortran.egs_check_arguments()
-    print("COMMON IO")
-    print("---------")
-    for name in dir(egsfortran.egs_io):
-        if not name.startswith("_"):
-            print(f'   {name} =', getattr(egsfortran.egs_io, name))
+    # print("COMMON IO")
+    # print("---------")
+    # for name in dir(egsfortran.egs_io):
+    #     if not name.startswith("_"):
+    #         print(f'   {name} =', getattr(egsfortran.egs_io, name))
 
     egsfortran.egs_io.egs_home = f"{str(EGS_HOME) + '/':<128}"  # need trailing "/"
     egsfortran.egs_io.pegs_file = f"{PEGS_FILE:<256}"
@@ -264,7 +264,7 @@ def init():
 def main():
     # The "in"s are local variables
     init()
-    iqin=1  #                incident charge - electrons
+    iqin=-1  #                incident charge - electrons
     ein=20 + prm
     ei=20.0  #    20 MeV kinetic energy"
     xin = yin = zin = 0.0  #      incident at origin
@@ -423,7 +423,7 @@ def compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2):
     elktmp = 0.5*(elke1+elke2+0.25*fedep*fedep*(1+fedep*(1+0.875*fedep)))
     
     # *** -1 for 0-based in Python
-    lelktmp = lelke1 - 1 
+    lelktmp = lelke1 - 1 # was = lelke1
     medium -= 1
     
     if lelec < 0:
@@ -444,7 +444,7 @@ def compute_drange(lelec, medium, eke1, eke2, lelke1, elke1, elke2):
     return fedep*eke1*dedxmid*(1+aux)
 
 
-def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke):
+def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke, total_de):
     """Calculate path length to the next discrete interaction
 
     Once the sub-threshold processes energy loss to the next discrete 
@@ -458,8 +458,7 @@ def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke):
     # in/out:  compute_tstep, total_tstep,
     # global e_array, epcont.eke, epcont.elke, bounds.vacdst, eke0[], eke1[]
 
-    print("fn:", ",".join(str(x) for x in (qel,lelec, medium, demfp, sig, eke, elke)) )
-    total_de = demfp/sig
+    # print("fn:", ",".join(str(x) for x in (qel,lelec, medium, demfp, sig, eke, elke, total_de)) )
     fedep = total_de
     ekef  = eke - fedep
 

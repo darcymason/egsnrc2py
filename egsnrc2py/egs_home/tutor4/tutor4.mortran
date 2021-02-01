@@ -91,9 +91,9 @@ REPLACE {$XXXCALCULATE-TSTEP-FROM-DEMFP;} WITH  "Remove XXX for generating test 
 "        ============================"
 {;
   IF( compute_tstep ) [
-    $egs_info('(a,4I4,4F16.12)','in ',
-    qel,lelec, medium, lelke, demfp, sig, eke, elke);
     total_de = demfp/sig; fedep = total_de;
+    $egs_info('(a,4I4,5E25.16e2)','in ',
+    qel,lelec, medium, lelke, demfp, sig, eke, elke,total_de);
     ekef  = eke - fedep;
     IF( ekef <= E_array(1,medium) ) [ tstep = vacdst; ]
     ELSE
@@ -119,7 +119,7 @@ REPLACE {$XXXCALCULATE-TSTEP-FROM-DEMFP;} WITH  "Remove XXX for generating test 
       ]
     ]
     total_tstep = tstep;
-    $egs_info('(a,F14.9)','out ',tstep);
+    $egs_info('(a,E25.16e2)','out ',tstep);
     compute_tstep = .false.;
   ]
   tstep = total_tstep/rhof;  " non-default density scaling "
@@ -129,8 +129,10 @@ REPLACE {$XXXCALCULATE-TSTEP-FROM-DEMFP;} WITH  "Remove XXX for generating test 
 REPLACE {$CALCULATE-TSTEP-FROM-DEMFP;} WITH
 "        ============================"
 {;
+  total_de = demfp/sig;
   IF( compute_tstep ) [
-     tstep = calc_tstep_from_demfp(qel,lelec,medium,lelke,demfp,sig,eke,elke);
+     tstep = calc_tstep_from_demfp(qel,lelec,medium,lelke,
+                                   demfp,sig,eke,elke,total_de);
      total_tstep = tstep;
      compute_tstep = .false.;
   ]
