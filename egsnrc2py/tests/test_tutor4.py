@@ -89,3 +89,17 @@ class TestTutor4:
             got = tutor4.calc_tstep_from_demfp(*inputs)
             
             assert got == pytest.approx(expected,abs=0.0000001)
+
+    def test_compute_eloss(self):
+        "Calc correct values for $COMPUTE-ELOSS in Python"
+        # Compare against ones captured from TUTOR4 run with extra prints
+        tutor4.init()  # get all data loaded
+        # Known inputs for compute-drange from Mortran tutor4 run
+        for inputs, expected in known_in_out(TEST_DATA / "compute-eloss.txt",
+            (int, int, float, float, float, int), float
+        ):
+            # 
+            print("in ", ",".join(str(x) for x in inputs))
+            got = tutor4.compute_eloss(*inputs)
+            
+            assert got == pytest.approx(expected,abs=0.0000001)
