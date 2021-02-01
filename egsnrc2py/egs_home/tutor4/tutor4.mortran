@@ -175,6 +175,58 @@ REPLACE {$XXXCOMPUTE-ELOSS(#,#,#,#,#);} WITH
 ;
 
 
+REPLACE {$XXXCOMPUTE-ELOSS-G(#,#,#,#,#);} WITH
+"        ============================"
+{
+  "lelec, medium, step, eke, elke, lelke, range_"
+  $egs_info('(a, 2I4, 3E25.16e2,I4, E25.16e2)','in ',
+  lelec, medium, {P1},{P2},{P3},{P4}, range);
+
+  tuss = range - range_ep(qel,{P4},medium)/rhof;
+    " here tuss is the range between the initial energy and the next lower "
+    " energy on the interpolation grid "
+  IF( tuss >= {P1} ) [  " Final energy is in the same interpolation bin "
+      $COMPUTE-ELOSS({P1},{P2},{P3},{P4},{P5});
+      /* {P5} = {P5}*rhof; "IK, rhof bug"  */
+      "IK: rhof scaling bug, June 9 2006. rhof scaling is done in "
+      "    $COMPUTE-ELOSS above!                                  "
+  ]
+  ELSE [ " Must find first the table index where the step ends using "
+         " pre-calculated ranges                                     "
+      lelktmp = {P4};
+      tuss = (range - {P1})*rhof;
+         " now tuss is the range of the final energy electron "
+         " scaled to the default mass density from PEGS4      "
+      IF( tuss <= 0 ) [ {P5} = {P2} - TE(medium)*0.99; ]
+        " i.e., if the step we intend to take is longer than the particle "
+        " range, the particle energy goes down to the threshold "
+        "({P2} is the initial particle energy)  "
+        "originally the entire energy was lost, but msdist_xxx is not prepared"
+        "to deal with such large eloss fractions => changed July 2005."
+      ELSE [
+          WHILE ( tuss < range_ep(qel,lelktmp,medium) ) [
+              lelktmp = lelktmp - 1; ]
+          elktmp = (lelktmp+1-eke0(medium))/eke1(medium);
+          eketmp = E_array(lelktmp+1,medium);
+          "tuss = range_ep(qel,lelktmp+1,medium) - tuss;"
+          "IK: rhof scaling bug, June 9 2006: because of the change in "
+          "    $COMPUTE-ELOSS above, we must scale tuss by rhof        "
+          tuss = (range_ep(qel,lelktmp+1,medium) - tuss)/rhof;
+          $COMPUTE-ELOSS(tuss,eketmp,elktmp,lelktmp,{P5});
+          {P5} = {P5} + {P2} - eketmp;
+      ]
+  ]
+  $egs_info('(a,E25.16e2)','out ',{P5});
+}
+;
+
+
+REPLACE {$COMPUTE-ELOSS-G(#,#,#,#,#);} WITH
+"        ============================"
+{
+  {P5} = compute_eloss_g(lelec,medium, {P1},{P2},{P3},{P4},range);
+}
+;
 
 
 

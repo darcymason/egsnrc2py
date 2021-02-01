@@ -103,3 +103,19 @@ class TestTutor4:
             got = tutor4.compute_eloss(*inputs)
             
             assert got == pytest.approx(expected,abs=0.0000001)
+
+    def test_compute_eloss_g(self):
+        "Calc correct values for $COMPUTE-ELOSS-G in Python"
+        # Compare against ones captured from TUTOR4 run with extra prints
+        tutor4.init()  # get all data loaded
+        # Known inputs for compute-drange from Mortran tutor4 run
+        
+        for inputs, expected in known_in_out(TEST_DATA / "compute-eloss-g.txt",
+            # lelec, medium, step, eke, elke, lelke, range_
+            (int, int, float, float, float, int, float), float
+        ):
+            # 
+            print("in ", ",".join(str(x) for x in inputs))
+            got = tutor4.compute_eloss_g(*inputs)
+            
+            assert got == pytest.approx(expected,abs=0.0000001)

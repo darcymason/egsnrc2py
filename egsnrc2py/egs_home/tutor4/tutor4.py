@@ -129,7 +129,10 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
             # even if not in the mortran call arguments,
             # unless intent(callback,hide) is used in f2py comments,
             # in which case, need to set `egsfortran.hownear = hownear`
-            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp, compute_eloss)
+            egsfortran.electr(ircode, 
+                howfar, hownear, calc_tstep_from_demfp, 
+                compute_eloss, compute_eloss_g
+            )
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -261,10 +264,10 @@ def init():
     # perpendicular to the slab
 
 
-def main():
+def main(iqin=-1):  # iqin here only to make generating validation data faster
     # The "in"s are local variables
     init()
-    iqin=-1  #                incident charge - electrons
+    # iqin=-1  #                incident charge - electrons
     ein=20 + prm
     ei=20.0  #    20 MeV kinetic energy"
     xin = yin = zin = 0.0  #      incident at origin
@@ -494,8 +497,26 @@ def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke, total
 
 
 def compute_eloss(lelec, medium, step, eke, elke, lelke):
-    # ** 0-based
+    """"Compute the energy loss due to sub-threshold processes for a path-length `step`.
+    
+    The energy at the beginning of the step is `eke`, `elke`=log(`eke`), 
+    `lelke` is the interpolation index.
+    The formulae are based on the logarithmic interpolation for dedx
+    used in EGSnrc.
+    
+    Returns
+    -------
+    REAL
+        energy loss
+    
+    Note
+    ----
+    Assumes that initial and final energy are in the same interpolation bin.
+    
+    """
     # print("fn: ",lelec, medium, step, eke, elke, lelke)
+
+    # ** 0-based
     medium_m1 = medium - 1 
     lelke_m1 = lelke - 1
     
@@ -516,5 +537,67 @@ def compute_eloss(lelec, medium, step, eke, elke, lelke):
     return de
 
 
+def compute_eloss_g(lelec, medium, step, eke, elke, lelke, range_):
+    """A generalized version of `compute_eloss`"""
+    # ** 0-based arrays in Python
+    medium_m1 = medium - 1 
+    lelke_m1 = lelke - 1
+
+    # Note: range_ep IS 0-based already in first dimn
+
+    qel = 0 if lelec==-1 else 1  # recalc here to not bother passing in both
+    tuss = range_ - range_ep[qel,lelke_m1,medium_m1] / rhof
+        #  here tuss is the range between the initial energy and the next lower 
+        #  energy on the interpolation grid 
+    if tuss >= step:
+        #  Final energy is in the same interpolation bin 
+        # --- Inline replace: $ COMPUTE_ELOSS(tustep,eke,elke,lelke,de); -----
+        de = compute_eloss(lelec, medium, step, eke, elke, lelke)
+
+    else:  # Must find first the table index where the step ends using
+           #  pre-calculated ranges                                     
+        lelktmp = lelke
+        tuss = (range_ - step) * rhof
+        #  now tuss is the range of the final energy electron 
+        #  scaled to the default mass density from PEGS4      
+ 
+        if tuss <= 0:
+            de = eke - te[medium_m1]*0.99 
+            #  i.e., if the step we intend to take is longer than the particle 
+            #  range, the particle energy goes down to the threshold 
+            # (eke is the initial particle energy)  
+            # originally the entire energy was lost, but msdist_xxx is not prepared
+            # to deal with such large eloss fractions => changed July 2005.
+        else:
+            while tuss < range_ep[qel, lelktmp-1, medium_m1]:
+                lelktmp -= 1
+            lelktmp_m1 = lelktmp - 1  # *** 0-based arrays in Python
+            elktmp = (lelktmp + 1 - eke0[medium_m1]) / eke1[medium_m1]
+            eketmp = e_array[lelktmp_m1+1, medium_m1]
+            # tuss = range_ep(qel,lelktmp+1,medium_m1) - tuss
+            # IK: rhof scaling bug, June 9 2006: because of the change in 
+            #     compute_eloss above, we must scale tuss by rhof         
+            tuss = (range_ep[qel, lelktmp_m1+1, medium_m1] - tuss) / rhof
+            # --- Inline replace: $ COMPUTE_ELOSS(tuss,eketmp,elktmp,lelktmp,de); -----
+            de = compute_eloss(lelec, medium, tuss, eketmp, elktmp, lelktmp)
+            de = de + eke - eketmp
+
+    return de
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    HERE  = Path(__file__).resolve().parent
+    TEST_DATA = HERE.parent.parent / "tests" / "data"
+
+    if len(sys.argv) == 1:
+        main()
+    
+    # Else, generating validation data for tests
+    # generator both e- and e+
+    # filename = sys.argv[1]
+    # for now, user still has to redirect to ../../tests/data/(filename)
+    if sys.argv[1] != "gen":
+        print("Only accept 'gen' as optional argument")
+    main(-1)
+    main(+1)
