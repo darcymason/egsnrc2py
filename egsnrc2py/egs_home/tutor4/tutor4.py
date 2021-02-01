@@ -129,7 +129,7 @@ def shower(iqi,ei,xi,yi,zi,ui,vi,wi,iri,wti):
             # even if not in the mortran call arguments,
             # unless intent(callback,hide) is used in f2py comments,
             # in which case, need to set `egsfortran.hownear = hownear`
-            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp)
+            egsfortran.electr(ircode, howfar, hownear, calc_tstep_from_demfp, compute_eloss)
         # egsfortran.flushoutput()
     # ---------------- end of subroutine shower
 
@@ -491,6 +491,29 @@ def calc_tstep_from_demfp(qel,lelec, medium, lelke, demfp, sig, eke, elke, total
             tstep=tstep+tuss+range_ep[qel,lelke-1,medium_m1]-range_ep[qel,lelkef+1-1,medium_m1]
 
     return tstep
+
+
+def compute_eloss(lelec, medium, step, eke, elke, lelke):
+    # ** 0-based
+    # print("fn: ",lelec, medium, step, eke, elke, lelke)
+    medium_m1 = medium - 1 
+    lelke_m1 = lelke - 1
+    
+    if lelec < 0:
+        dedxmid = ededx1[lelke_m1, medium_m1]*elke+ ededx0[lelke_m1, medium_m1]  # EVALUATE dedxmid USING ededx(elke)
+        aux = ededx1[lelke_m1, medium_m1]/dedxmid
+    else:
+        dedxmid = pdedx1[lelke_m1, medium_m1]*elke+ pdedx0[lelke_m1, medium_m1]  # EVALUATE dedxmid USING pdedx(elke)
+        aux = pdedx1[lelke_m1, medium_m1]/dedxmid
+
+    # de = dedxmid*tuss #  Energy loss using stopping power at the beginning 
+    de = dedxmid*step*rhof # IK: rhof scaling bug, June 9 2006
+                            # rhof scaling must be done here and NOT in 
+                            # $ COMPUTE-ELOSS-G
+    fedep = de / eke
+    de = de*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-0.25*fedep*(2-aux*(4-aux)))))
+
+    return de
 
 
 if __name__ == "__main__":

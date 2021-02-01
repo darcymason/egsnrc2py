@@ -141,6 +141,42 @@ REPLACE {$CALCULATE-TSTEP-FROM-DEMFP;} WITH
 ;
 
 
+REPLACE {$COMPUTE-ELOSS(#,#,#,#,#);} WITH
+"        =========================="
+{;
+  {P5} = compute_eloss(lelec, medium, {P1},{P2},{P3},{P4});
+}
+;
+
+REPLACE {$XXXCOMPUTE-ELOSS(#,#,#,#,#);} WITH
+"        =========================="
+{;
+  $egs_info('(a, 2I4, 3E25.16e2,I4)','in ',
+    lelec, medium, {P1},{P2},{P3},{P4});
+  IF( lelec < 0 ) [
+      $EVALUATE dedxmid USING ededx({P3});
+      aux = ededx1({P4},medium)/dedxmid;
+  ]
+  ELSE [
+      $EVALUATE dedxmid USING pdedx({P3});
+      aux = pdedx1({P4},medium)/dedxmid;
+  ]
+  /*
+  {P5} = dedxmid*{P1};  " Energy loss using stopping power at the beginning "
+  */
+  {P5} = dedxmid*{P1}*rhof; "IK: rhof scaling bug, June 9 2006"
+                            "rhof scaling must be done here and NOT in "
+                            "$COMPUTE-ELOSS-G below!"
+  fedep = {P5}/{P2};
+  {P5} = {P5}*(1-0.5*fedep*aux*(1-0.333333*fedep*(aux-1-
+             0.25*fedep*(2-aux*(4-aux)))));
+  $egs_info('(a,E25.16e2)','out ',{P5});
+}
+;
+
+
+
+
 
 "Define a COMMON for scoring in AUSGAB"
 REPLACE {;COMIN/SCORE/;} WITH {
