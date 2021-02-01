@@ -1017,6 +1017,12 @@ EXTERNAL compute_eloss;
 "f2py de=compute_eloss(lelec, medium, step, eke, elke, lelke)"
 $REAL compute_eloss;
 
+"f2py intent(callback) compute_eloss_g"
+EXTERNAL compute_eloss_g;
+"f2py real*8 step, eke, elke, range, de"
+"f2py integer lelec, medium, lelke"
+"f2py de=compute_eloss_g(lelec, medium, step, eke, elke, lelke, range)"
+$REAL compute_eloss_g;
 
 !NOCOMMENTS;
 $INTEGER IRCODE;
