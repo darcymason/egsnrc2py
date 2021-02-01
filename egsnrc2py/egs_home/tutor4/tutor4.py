@@ -542,6 +542,7 @@ def compute_eloss_g(lelec, medium, step, eke, elke, lelke, range_):
 
     # Note: range_ep IS 0-based already in first dimn
 
+    qel = 0 if lelec==-1 else 1  # recalc here to not bother passing in both
     tuss = range_ - range_ep[qel,lelke_m1,medium_m1] / rhof
         #  here tuss is the range between the initial energy and the next lower 
         #  energy on the interpolation grid 
