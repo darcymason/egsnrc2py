@@ -376,7 +376,7 @@ score = Score()
 
 
 class Misc(ComplexCommon):
-    """From tutor4"""
+    """Miscellaneous Common"""
     common_name = "misc"
 
     all_vars = "dunit,kmpi,kmpo,rhor(mxreg),med(mxreg),iraylr(mxreg),iphotonucr(mxreg)"
@@ -397,6 +397,85 @@ class Misc(ComplexCommon):
         }
     }
 misc = Misc()
+
+
+class Epcont(ComplexCommon):
+    """Electron-photon control variables"""
+    common_name = "epcont"
+
+    all_vars = (
+        "edep,edep_local,tstep,tustep,ustep,tvstep,vstep,"
+        "rhof,eold,enew,eke,elke,gle,e_range,"
+        "x_final,y_final,z_final,"
+        "u_final,v_final,w_final,"
+        "idisc,irold,irnew,iausfl(mxaus)"
+    )
+
+    all_types_and_comments = {
+        ENERGY_PRECISION: {
+            'edep':   "energy deposition in mev",
+            'edep_local': "local energy deposition in mev",
+        },
+        REAL: {
+            'tstep': "distance to a discrete interaction",
+            'tustep': "intended step length, befor check with geometry",
+            'ustep': "transport distance calculated from tustep",
+            'vstep': "transport distance after truncation by howfar",
+            'tvstep': "curved path-length calculated from tvstep",
+            'rhof': "mass density ratio",
+            'eold': "energy before deduction of energy loss",
+            'enew': "energy after  deduction of energy loss",
+            'eke': "kinetic energy",
+            'elke': "log(eke)",
+            'gle': "log(energy) in photon",
+            'e_range': "range of electron before an iarg=0 ausgab call",
+            'x_final': "position at end of step",
+            'y_final': "",
+            'z_final': "",
+            'u_final':("direction at end of step"
+                                    "only set (and relevant) "
+                                    "for electrons"),
+            'v_final': "",
+            'w_final': "",
+
+        },
+        INTEGER: {
+            'idisc': "flag indicating user discard",
+            'irold': "region before transport",
+            'irnew': "region after transport",
+            'iausfl': "flags for ausgab calls",
+        }
+    }
+epcont = Epcont()
+
+
+class Egs_vr(ComplexCommon):
+    """EGSnrc internal Variance Reduction Macros"""
+    common_name = "egs_vr"
+
+    all_vars = (
+        "e_max_rr(mxreg),prob_rr,nbr_split,i_play_rr,i_survived_rr,"
+        "n_rr_warning,i_do_rr(mxreg)"
+    )
+
+    all_types_and_comments = {
+        REAL: {
+            'e_max_rr': "max energy at which to do range rejection (RR)",
+            'prob_RR':  "probability for survival in R. Roulette",
+        },
+        INTEGER: {
+            'nbr_split':      "do brems splitting if > 1",
+            'i_play_RR':      "0 => don't play Russian Roulette; 1 => play Russian Roulette",
+            'i_survived_RR':  ("0 => all particles survive RR; n => n particles were"
+                                " eliminated by RR in this interaction"),
+            'n_RR_warning':   "a counter for user errors",
+        },
+        SHORT_INT: {
+            'i_do_rr':  "0 => no RR, region by region; 1 => there is RR",
+        },
+    }
+egs_vr = Egs_vr()
+
 
 
 if __name__ == "__main__":
