@@ -477,6 +477,110 @@ class Egs_vr(ComplexCommon):
 egs_vr = Egs_vr()
 
 
+class Ch_steps(ComplexCommon):
+    """EGSnrc internal Variance Reduction Macros"""
+    common_name = "ch_steps"
+
+    all_vars = "count_pii_steps,count_all_steps,is_ch_step"
+
+    all_types_and_comments = {
+        REAL: {
+            'count_pii_steps': "",  # count_pII_steps, but f2py loses case
+            'count_all_steps': "",
+        },
+        LOGICAL: {
+            'is_ch_step': "",
+        },
+    }
+ch_steps = Ch_steps()
+
+
+class Nist_brems(ComplexCommon):
+    """Brems commons"""
+    common_name = "nist_brems"
+
+    all_vars = (
+        "nb_fdata(mxbrxs,mxbres,mxmed),"  # actually (0:mxbrxs,...)
+        "nb_xdata(mxbrxs,mxbres,mxmed),"  # actually (0:mxbrxs,...)
+        "nb_wdata(mxbrxs,mxbres,mxmed),"
+        "nb_idata(mxbrxs,mxbres,mxmed),"
+        "nb_emin(mxmed),nb_emax(mxmed),"
+        "nb_lemin(mxmed),nb_lemax(mxmed),"
+        "nb_dle(mxmed),nb_dlei(mxmed),"
+        "log_ap(mxmed)"
+    )
+
+    all_types_and_comments = {
+        REAL: {
+            "nb_fdata": "",
+            "nb_xdata": "",
+            "nb_wdata": "",
+            "nb_emin": "",
+            "nb_emax": "",
+            "nb_lemin": "",
+            "nb_lemax": "",
+            "nb_dle": "",
+            "nb_dlei": "",
+            "log_ap": "",
+        },
+        INTEGER: {
+            "nb_idata": "",
+        },
+    }
+nist_breams = Nist_brems()
+
+
+class Brempr(ComplexCommon):
+    """EGSnrc BREMPR"""
+    common_name = "brempr"
+
+    all_vars = (
+        "dl1(8,mxmed),dl2(8,mxmed),dl3(8,mxmed),"
+        "dl4(8,mxmed),dl5(8,mxmed),dl6(8,mxmed),"
+        "alphi(2,mxmed),bpar(2,mxmed),delpos(2,mxmed),"
+        "wa(mxmed,mxel),pz(mxmed,mxel),zelem(mxmed,mxel),rhoz(mxmed,mxel),"
+        "pwr2i(mxpwr2i),"
+        "delcm(mxmed),zbrang(mxmed),lzbrang(mxmed),nne(mxmed),"
+        "ibrdst,iprdst,ibr_nist,pair_nrc,itriplet,"
+        "asym(mxmed,mxel,2)"
+    )
+
+    all_types_and_comments = {
+        REAL: {
+            "dl1": ("Parameter for the fit of the screening"
+                   "rejection function, eq. (2.7.14 and 15)"),
+            "dl2": "",
+            "dl3": "",
+            "dl4": "",
+            "dl5": "",
+            "dl6": "",
+            "alphi":  "Prob. for the (1-br)/br part in `brems`, eq. (2.7.64)",
+            "bpar":   "Prob. for the 12*(br-1/2)**2 part in `pair`, eq. (2.7.105)",
+            "delpos": "maximum delta, eq. (2.7.31)",
+            "wa":     "atomic weight",
+            "pz":     "atomic fraction of an element in a compound",
+            "zelem":  "Z for a given component",
+            "rhoz":   "density of an element in a compound",
+            "pwr2i":  "powers of 1/2 (used for sampling (1-br)/br",
+            "delcm":  "136*m*exp(Zg), eq. (2.7.51)",
+            "zbrang": "composite factor for angular distributions",
+            "lzbrang":"-log(Zbrang)",
+        },
+        INTEGER: {
+            "nne":    "number of elements/compound",
+            "ibrdst": "flag to switch on bremsstrahlung angular distributions",
+            "iprdst": "flag to switch on pair angular distributions",
+            "ibr_nist":  "use the NIST bremsstrahlung cross sections",
+            "itriplet":  "if set to 1, explicitely simulate triplet events",
+            "pair_nrc":  ("=0 => use Bethe-Heitler pair cross sections"
+                          "=1 => use the NRC pair cross sections"),
+        },
+        STRING: {
+            "asym": "",
+        }
+    }
+brempr = Brempr()
+
 
 if __name__ == "__main__":
     # elec = ElecIn()

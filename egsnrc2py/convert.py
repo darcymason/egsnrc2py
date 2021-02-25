@@ -1,6 +1,7 @@
 import re
 
 import sys
+from pathlib import Path
 
 from typing import List
 from textwrap import dedent
@@ -15,10 +16,12 @@ from egsnrc2py.util import fix_identifiers, replace_subs, main_subs
 
 
 if sys.version_info < (3, 9):
-    raise ImportError("Need Python 3.9 or later")
+    raise ImportError("Need Python 3.9 or later")  # for dict union symbol
 
-# XXX needs to be OrderedDict!!
 
+usage = """
+    python convert.py <input_filename>
+"""
 
 call_subs= {
     # paired with added funcs
@@ -174,22 +177,25 @@ def build_particle_class(filename) -> None:
 if __name__ == "__main__":
     from egsnrc2py.config import EGS_HOME_PATH
 
-    # with open(MORTRAN_SOURCE_PATH / "electr.mortran", 'r') as f:
-    #     egs_code = f.read()
-    with open(MORTRAN_SOURCE_PATH / "shower.mortran", 'r') as f:
+
+    if len(sys.argv) != 2:
+        print(usage)
+        sys.exit(-1)
+
+    input_path = Path(sys.argv[1])
+    if input_path.suffix != "mortran":
+        input_path = Path(input_path.name + ".mortran")
+
+    with open(MORTRAN_SOURCE_PATH / input_path, 'r') as f:
         egs_code = f.read()
+
+
     with open(MORTRAN_SOURCE_PATH / "egsnrc.macros", 'r') as f:
         macros_code = f.read()
     with open(MORTRAN_SOURCE_PATH / "ranlux.macros", 'r') as f:
         random_macros = f.read()
 
-    out_filename = AUTO_TRANSPILE_PATH / "electr.py"
-
-    # with open(EGS_HOME_PATH / "tutor1" / "tutor1.mortran", 'r') as f:
-    #     code = f.read()
-    # out_filename = AUTO_TRANSPILE_PATH / "tutor1.py"
-
-    # mod_macros_filename = AUTO_TRANSPILE_PATH / "egsnrc_mod.macros"
+    out_filename = AUTO_TRANSPILE_PATH / (input_path.stem + ".py")
 
     params_py_filename = AUTO_TRANSPILE_PATH / "params.py"
     callbacks_filename = AUTO_TRANSPILE_PATH / "callbacks.py"
@@ -215,7 +221,7 @@ if __name__ == "__main__":
     # macros.write_callbacks_file() - for now will place in same output file
     callbacks_code = macros._generate_callbacks_code()
 
-    print("Writing", out_filename)
+    print("Writing", str(out_filename))
     with open(out_filename, "w") as f:
         f.write(callbacks_code)
         f.write(egs_code)

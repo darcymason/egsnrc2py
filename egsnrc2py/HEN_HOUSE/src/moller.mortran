@@ -1,0 +1,150 @@
+"******************************************************************"
+"                               National Research Council of Canada"
+SUBROUTINE MOLLER;
+"                                                                  "
+"******************************************************************"
+"   DISCRETE MOLLER SCATTERING (A CALL TO THIS ROUTINE) HAS BEEN   "
+"   ARBITRARILY DEFINED AND CALCULATED TO MEAN MOLLER SCATTERINGS  "
+"   WHICH IMPART TO THE SECONDARY ELECTRON SUFFICIENT ENERGY THAT  "
+"   IT BE TRANSPORTED DISCRETELY.  THE THRESHOLD TO TRANSPORT AN   "
+"   ELECTRON DISCRETELY IS A TOTAL ENERGY OF AE OR A KINETIC ENERGY"
+"   OF TE=AE-RM.  SINCE THE KINETIC ENERGY TRANSFER IS ALWAYS, BY  "
+"   DEFINITION, LESS THAN HALF OF THE INCIDENT KINETIC ENERGY, THIS"
+"   IMPLIES THAT THE INCIDENT ENERGY, EIE, MUST BE LARGER THAN     "
+"   THMOLL=TE*2+RM.  THE REST OF THE COLLISION CONTRIBUTION IS     "
+"   SUBTRACTED CONTINUOUSLY FROM THE ELECTRON AS IONIZATION        "
+"   LOSS DURING TRANSPORT.                                         "
+"******************************************************************"
+
+$IMPLICIT-NONE;
+
+$COMIN-MOLLER;   "DEFAULT REPLACEMENT PRODUCES THE FOLLOWING:
+                 "  COMIN/EGS-VARIANCE-REDUCTION, DEBUG,STACK,THRESH,"
+                                          "UPHIOT,USEFUL,RANDOM/;"
+;COMIN/EII-DATA,ELECIN,EPCONT,EDGE,BREMPR/;
+
+$DEFINE-LOCAL-VARIABLES-MOLLER;
+
+$REAL sigm,pbrem,rsh,Uj,sig_j;
+$INTEGER lelke,iele,ish,nsh,ifirst,i,jj,iZ,iarg;
+
+"IRCODE=1;  appears to be unused, IK Oct 97"
+NPold = NP;      "Set the old stack counter"
+PEIE=E(NP);"PRECISE ENERGY OF INCIDENT ELECTRON"
+EIE=PEIE; "ENERGY OF INCIDENT ELECTRON"
+PEKIN=PEIE-PRM;  "PRECISE K.E. OF INCIDENT ELECTRON"
+EKIN=PEKIN;
+
+IF( eii_flag > 0 & eii_nsh(medium) > 0 ) [
+    "The EII flag is set and this medium has shells for which we want to"
+    "simulate EII => sample if the interaction is with a EII shell"
+    $SET INTERVAL elke,eke;
+    $EVALUATE sigm USING esig(elke);
+    $EVALUATE pbrem USING ebr1(elke);
+    sigm = sigm*(1 - pbrem);
+    $RANDOMSET rsh; rsh = sigm*rsh;
+    DO iele=1,nne(medium) [
+        iZ = int(zelem(medium,iele)+0.5);
+        nsh = eii_no(medium,iele);
+        IF( nsh > 0 ) [
+            ifirst = eii_first(medium,iele);
+            DO ish = 1,nsh [
+                Uj = binding_energies(ish,iZ);
+                IF( ekin > Uj & (Uj > te(medium) | Uj > ap(medium)) ) [
+                    jj = ifirst + ish - 1;
+                    i = eii_a(jj)*elke + eii_b(jj) + (jj-1)*$N_EII_BINS;
+                    sig_j = eii_xsection_a(i)*elke + eii_xsection_b(i);
+                    sig_j = sig_j*pz(medium,iele)*eii_cons(medium);
+                    rsh = rsh - sig_j;
+                    IF( rsh < 0 ) [
+                        $AUSCALL($EIIB);
+                        call eii_sample(ish,iZ,Uj);
+                        $AUSCALL($EIIA);
+                        return;
+                    ]
+                ]
+            ]
+        ]
+    ]
+]
+IF( ekin <= 2*te(medium) ) return;
+T0=EKIN/RM;
+E0=T0+1.0;
+EXTRAE = EIE - THMOLL(MEDIUM);
+E02=E0*E0;
+"BETAI2=E02/(E02-1.0); " "BLIF 96/2/1 -- not needed for Moller fix-up"
+EP0=TE(MEDIUM)/EKIN;
+"G1=(1.-2.*EP0)*BETAI2;" "BLIF 96/2/1 -- not needed for Moller fix-up"
+G2=T0*T0/E02;
+G3=(2.*T0+1.)/E02;
+"   H.H.NAGEL HAS CONSTRUCTED A FACTORIZATION OF THE FREQUENCY"
+"   DISTRIBUTION FUNCTION FOR THE MOLLER DIFFERENTIAL CROSS"
+"   SECTION USED AS SUGGESTED BY BUTCHER AND MESSEL."
+"   (H.H.NAGEL, OP.CIT., P. 53-55)                                 "
+"   HOWEVER, A MUCH SIMPLER SAMPLING METHOD WHICH DOES NOT BECOME  "
+"   VERY INEFFICIENT NEAR THMOLL IS THE FOLLOWING. . .             "
+"   LET BR=EKS/EKIN,  WHERE EKS IS KINETIC ENERGY TRANSFERED TO THE"
+"   SECONDARY ELECTRON AND EKIN IS THE INCIDENT KINETIC ENERGY.    "
+
+"   MODIFIED (7 FEB 1974) TO USE THE TRUE MOLLER CROSS SECTION."
+"   THAT IS, INSTEAD OF THE E+ E- AVERAGE GIVEN IN THE ROSSI"
+"   FORMULA USED BY NAGEL.  THE SAMPLING SCHEME IS THAT"
+"   USED BY MESSEL AND CRAWFORD (EPSDF 1970 P.13)"
+"   FIRST SAMPLE (1/BR**2) OVER (TE/EKIN,1/2) . . .            "
+
+GMAX=(1.+1.25*G2); "BLIF 96/2/1 -- Moller fix-up"
+LOOP  [  " TO RETRY IF REJECTED"
+    $RANDOMSET RNNO27;
+    BR = TE(MEDIUM)/(EKIN-EXTRAE*RNNO27);
+
+    "   USE MESSEL AND CRAWFORDS REJECTION FUNCTION."
+    R=BR/(1.-BR);
+    $RANDOMSET RNNO28;
+    REJF4="G1*"(1.+G2*BR*BR+R*(R-G3)); "BLIF 96/2/1 -- Moller fix-up"
+    RNNO28=GMAX*RNNO28; "BLIF 96/2/1 -- Moller fix-up"
+]UNTIL RNNO28.LE.REJF4; "TRY UNTIL ACCEPTED. END REJECTION LOOP"
+
+PEKSE2=BR*EKIN; "PRECISE KINETIC ENERGY OF SECONDARY ELECTRON #2"
+PESE1=PEIE-PEKSE2; "PRECISE ENERGY OF SECONDARY ELECTRON #1"
+PESE2=PEKSE2+PRM; "PRECISE ENERGY OF SECONDARY ELECTRON #2"
+ESE1=PESE1; "ENERGY OF SECONDARY ELECTRON 1"
+ESE2=PESE2; "ENERGY OF SECONDARY ELECTRON 2"
+E(NP)=PESE1;
+$CHECK-STACK(np+1,'MOLLER');
+E(NP+1)=PESE2;
+"   SINCE BR.LE.0.5, E(NP+1) MUST BE .LE. E(NP). "
+"   MOLLER ANGLES ARE UNIQUELY DETERMINED BY KINEMATICS            "
+
+" One possible way of dealing with double counting of angular      "
+" deflections in inelastic scattering would be to                  "
+" not deflect the 'old' electron as these deflections are          "
+" already taken into account in the multiple elastic scattering    "
+" This approach has the disadvantage of loosing correlations       "
+" between big energy losses and strong angular deflections         "
+" The advantage of such an approach is its simplicity.             "
+" If spin effects for multiple elastic scattering are turned on,   "
+" the double counting is taken into account by the appropriate     "
+" modification of the scattering power (which depends on AE)       "
+"                                                                  "
+"                                                                  "
+" IK, June 1999                                                    "
+
+H1=(PEIE+PRM)/PEKIN;
+"   DIRECTION COSINE CHANGE FOR 'OLD' ELECTRON                     "
+DCOSTH=H1*(PESE1-PRM)/(PESE1+PRM);
+SINTHE=DSQRT(1.D0-DCOSTH);
+COSTHE=DSQRT(DCOSTH);
+
+"sinthe = 0; costhe = 1; <- this will turn off the Moller ang. deflections"
+
+CALL UPHI(2,1);
+
+"   RELATED CHANGE AND (X,Y,Z) SETUP FOR 'NEW' ELECTRON            "
+NP=NP+1;
+IQ(NP)=-1;
+DCOSTH=H1*(PESE2-PRM)/(PESE2+PRM);
+SINTHE=-DSQRT(1.D0-DCOSTH);
+COSTHE=DSQRT(DCOSTH);
+CALL UPHI(3,2);
+RETURN;
+"END OF SUBROUTINE MOLLER"  END;
