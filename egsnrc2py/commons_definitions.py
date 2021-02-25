@@ -582,6 +582,100 @@ class Brempr(ComplexCommon):
 brempr = Brempr()
 
 
+class Eii_data(ComplexCommon):
+    """EGSnrc EII-DATA common block"""
+    common_name = "eii_data"
+
+    all_vars = (
+        "eii_xsection_a(max_eii_bins),eii_xsection_b(max_eii_bins),"
+        "eii_cons(mxmed),eii_a(max_eii_shells),eii_b(max_eii_shells),"
+        "eii_l_factor,eii_z(max_eii_shells),eii_sh(max_eii_shells),"
+        "eii_nshells(mxelement),eii_nsh(mxmed),eii_first(mxmed,mxel),"
+        "eii_no(mxmed,mxel),eii_flag"
+    )
+
+    all_types_and_comments = {
+        REAL: {
+            "eii_xsection_a": "EII x-section interpolation coeff.",
+            "eii_xsection_b": "EII x-section interpolation coeff.",
+            "eii_cons": "",
+            "eii_a": "energy grid coeff. for each shell ",
+            "eii_b": "energy grid coeff. for each shell ",
+            "eii_l_factor": "L-shell EII xsection scaling factor",
+        },
+        INTEGER: {
+            "eii_z": "Z of each shell",
+            "eii_sh": "shell type (1=K, 2=LI, eyc.)",
+            "eii_nshells": "No. of EII shells for each element",
+            "eii_nsh": "No. of EII shells for each medium ",
+            "eii_first": "First EII shell in the list of shells",
+            "eii_no": "N. of EII shells",
+            "eii_flag": (
+                "EII flag                          "
+                "         = 0 => no EII            "
+                "         = 1 => simple EII        "
+                "         > 1 => future use        "
+            ),
+        },
+    }
+eii_data = Eii_data()
+
+
+class Edge(ComplexCommon):
+    """Contains binding energies
+
+    Contains binding energies for K,L1,L2,L3, 'average' M
+    and 'average' N shells; photo-absorption interaction probabilities
+    with these shells; + fluorescence, Auger, Coster-Kronig transition
+    probabilities
+
+    IEDGFL is a flag for turning on/off atomic relaxations
+    IPHTER is a flag for turning on/off photo-lectron
+           angular distribution
+    both are left-overs from the previous coding
+    Have put now also data to calculate elemental PE
+    cross sections needed to sample the element the photon
+    is interacting with.
+
+    """
+    common_name = "edge"
+
+    all_vars = (
+        "binding_energies(mxshxsec,mxelement),"
+        "interaction_prob(mxshell,mxelement),"
+        "relaxation_prob(mxtrans,mxelement),"
+        "edge_energies(mxedge,mxelement),"
+        "edge_number(mxelement),"
+        "edge_a(mxedge,mxelement),"
+        "edge_b(mxedge,mxelement),"
+        "edge_c(mxedge,mxelement),"
+        "edge_d(mxedge,mxelement),"
+        "iedgfl(mxreg),iphter(mxreg)"
+    )
+    all_types_and_comments = {
+        REAL: {
+            "binding_energies": " K,L1,L2,L3,M,N binding energies  ",
+            "interaction_prob": (" prob. for interaction with one of"
+                                 " the above shells (provided photon"
+                                 " energy is above be)              "),
+            "relaxation_prob":  " relaxation probabilities         ",
+            "edge_energies":    " photo-absorption edge energies   ",
+            "edge_a": " photo cross section fit parameters ",
+            "edge_b": "",
+            "edge_c": "",
+            "edge_d": "",
+        },
+        SHORT_INT: {
+            "IEDGFL":  "flag for switching on fluorscent emission",
+            "IPHTER":  "flag for switching on photo-electron angular distr.",
+        },
+        INTEGER: {
+            "edge_number": " number of `edges' for each element",
+        }
+    }
+edge = Edge()
+
+
 if __name__ == "__main__":
     # elec = ElecIn()
     # for info in elec.arr_names_types_comments():
