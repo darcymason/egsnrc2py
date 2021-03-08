@@ -1,0 +1,236 @@
+"******************************************************************"
+"                               National Research Council of Canada"
+SUBROUTINE PHOTON(IRCODE);
+"                                                                  "
+"******************************************************************"
+
+$IMPLICIT-NONE;
+
+$INTEGER IRCODE; "1 => normal return"
+
+$COMIN-PHOTON;   "default replacement produces the following:
+                 "COMIN/DEBUG,BOUNDS,MEDIA,MISC,EPCONT,PHOTIN,STACK,THRESH,"
+                 "  UPHIOT,USEFUL,USER,RANDOM,EGS-VARIANCE-REDUCTION/;"
+
+$DEFINE-LOCAL-VARIABLES-PHOTON;
+
+IRCODE=1;"set up normal return"
+PEIG=E(NP);
+EIG=PEIG; "energy of incident gamma"
+IRL=IR(NP);
+$start_new_particle;
+
+IF(EIG <= PCUT(IRL)) [GO TO :PCUT-DISCARD:;]
+
+:PNEWENERGY:
+LOOP["enter this loop for each photon with new energy"
+
+    IF(WT(NP) = 0.0) [  "added May 01"
+        go to :USER-PHOTON-DISCARD:;
+    ]
+
+    GLE=LOG(EIG);"GLE IS GAMMA LOG ENERGY"
+
+    "   here to sample no. mfp to transport before interacting"
+
+    $SELECT-PHOTON-MFP;
+    " DEFAULT FOR $SELECT-PHOTON-MFP; IS:  $RANDOMSET RNNO35;"
+    "                                      DPMFP=-LOG(RNNO35);"
+    "NOTE:  THIS TEMPLATE CAN ALSO BE OVER-RIDDEN BY OTHER SCHEMES,"
+    "       SUCH AS THE 'EXPONENTIAL TRANSFORM' TECHNIQUE."
+
+    IROLD=IR(NP);"INITIALIZE PREVIOUS REGION"
+
+    :PNEWMEDIUM:
+    LOOP["HERE EACH TIME WE CHANGE MEDIUM DURING PHOTON TRANSPORT"
+        IF (MEDIUM.NE.0)[
+            $SET INTERVAL GLE,GE;"SET PWLF INTERVAL"
+        $EVALUATE GMFPR0 USING GMFP(GLE);
+        ]
+
+        :PTRANS:
+        LOOP["PHOTON TRANSPORT LOOP"
+            IF (MEDIUM.EQ.0)[
+                TSTEP=VACDST;
+            ]
+            ELSE [
+                $SET-RHOF;    "DENSITY RATIO SCALING TEMPLATE"
+                GMFP=GMFPR0/RHOF;
+                $RAYLEIGH-CORRECTION;  "A RAYLEIGH SCATTERING TEMPLATE"
+                "Ali:photonuc, 1 line"
+                $PHOTONUC-CORRECTION;  "A PHOTONUCLEAR TEMPLATE"
+                TSTEP=GMFP*DPMFP;
+            ]
+            "   SET DEFAULT VALUES FOR FLAGS SENT BACK FROM USER"
+            IRNEW=IR(NP);"SET DEFAULT NEW REGION NUMBER"
+            IDISC=0;"ASSUME PHOTON NOT DISCARDED"
+            USTEP=TSTEP;"TRANSFER TRANSPORT DISTANCE TO USER VARIABLE"
+            TUSTEP=USTEP;
+
+            "IF (USTEP.GT.DNEAR(NP)) [;CALL HOWFAR;]"
+            $CALL-HOWFAR-IN-PHOTON; "The above is the default replacement"
+
+            "   NOW CHECK FOR USER DISCARD REQUEST"
+            IF (IDISC.GT.0)["USER REQUESTED IMMEDIATE DISCARD"
+                GO TO :USER-PHOTON-DISCARD:;
+            ]
+
+            VSTEP=USTEP; "SET VARIABLE FOR OUTPUT CODE"
+            TVSTEP=VSTEP;
+            EDEP=PZERO; "NO ENERGY DEPOSITION ON PHOTON TRANSPORT"
+
+            x_final = x(np) + u(np)*vstep;
+            y_final = y(np) + v(np)*vstep;
+            z_final = z(np) + w(np)*vstep;
+
+            $AUSCALL($TRANAUSB);
+
+            "   TRANSPORT THE PHOTON"
+            x(np) = x_final
+            y(np) = y_final
+            z(np) = z_final;
+            DNEAR(NP)=DNEAR(NP)-USTEP;"DEDUCT FROM DISTANCE TO NEAREST BOUNDARY"
+            IF (MEDIUM.NE.0)[
+                DPMFP=MAX(0.,DPMFP-USTEP/GMFP);  "DEDUCT MFP'S"
+            ]
+            IROLD=IR(NP); "SAVE PREVIOUS REGION"
+
+            MEDOLD=MEDIUM;
+            IF (IRNEW.NE.IROLD) ["REGION CHANGE"
+                $photon_region_change;
+            ]
+
+            "   AFTER TRANSPORT CALL TO USER"
+            $AUSCALL($TRANAUSA);
+            "oct 31 bug found by C Ma. PCUT discard now after AUSGAB call"
+            IF(EIG.LE.PCUT(IRL)) [
+                GO TO :PCUT-DISCARD:;
+            ]
+
+            "   NOW CHECK FOR DEFERRED DISCARD REQUEST.  MAY HAVE BEEN SET"
+            "   BY EITHER HOWFAR, OR ONE OF THE TRANSPORT AUSGAB CALLS"
+            IF (IDISC.LT.0)
+                GO TO :USER-PHOTON-DISCARD:;
+
+            IF (MEDIUM.NE.MEDOLD)
+                EXIT :PTRANS:;
+
+            IF (MEDIUM.NE.0.AND.DPMFP.LE.$EPSGMFP)["TIME FOR AN INTERACTION"
+                EXIT :PNEWMEDIUM:;
+            ]
+        ]REPEAT ":PTRANS: LOOP"
+
+    ]REPEAT ":PNEWMEDIUM: LOOP"
+
+
+    "   IT IS FINALLY TIME TO INTERACT."
+    "   THE FOLLOWING MACRO ALLOWS ONE TO INTRODUCE RAYLEIGH SCATTERING"
+    $RAYLEIGH-SCATTERING;
+    "Ali:photonuclear, 1 line"
+    $PHOTONUCLEAR;
+    $RANDOMSET RNNO36; "THIS RANDOM NUMBER DETERMINES WHICH INTERACTION"
+    "   GBR1=PAIR/(PAIR+COMPTON+PHOTO)=PAIR/GTOTAL"
+    $EVALUATE GBR1 USING GBR1(GLE);
+    IF((RNNO36.LE.GBR1).AND.(E(NP).GT.RMT2) )["IT WAS A PAIR PRODUCTION"
+        $AUSCALL($PAIRAUSB);
+        CALL PAIR;
+        "   THE FOLLOWING MACRO ALLOWS THE USER TO CHANGE THE PARTICLE"
+        "   SELECTION SCHEME (E.G., ADDING IMPORTANCE SAMPLING (SPLITTING, "
+        "   LEADING PARTICLE SELECTION, ETC.))."
+        "   (DEFAULT MACRO IS TEMPLATE '$PARTICLE-SELECTION-PHOTON' "
+        "   WHICH IN TURN HAS THE 'NULL' REPLACEMENT ';') "
+        $PARTICLE-SELECTION-PAIR;
+        $AUSCALL($PAIRAUSA);
+        IF( iq(np) ~= 0 ) [
+            EXIT :PNEWENERGY:;
+        ]
+        ELSE [ "this may happen if pair electrons killed via Russian Roulette"
+            goto :PAIR-ELECTRONS-KILLED:;
+        ]
+    ]
+    "GBR2=(PAIR+COMPTON)/GTOTAL"
+    $EVALUATE GBR2 USING GBR2(GLE);
+    IF (RNNO36.LT.GBR2)["IT WAS A COMPTON"
+        $AUSCALL($COMPAUSB);
+        CALL COMPT;
+        "   THE FOLLOWING MACRO ALLOWS THE USER TO CHANGE THE PARTICLE"
+        "   SELECTION SCHEME (E.G., ADDING IMPORTANCE SAMPLING (SPLITTING, "
+        "   LEADING PARTICLE SELECTION, ETC.))."
+        "   (DEFAULT MACRO IS TEMPLATE '$PARTICLE-SELECTION-PHOTON' "
+        "   WHICH IN TURN HAS THE 'NULL' REPLACEMENT ';') "
+        $PARTICLE-SELECTION-COMPT;
+        $AUSCALL($COMPAUSA);
+        IF (IQ(NP).NE.0"NOT PHOTON")
+            EXIT:PNEWENERGY:;
+    ]
+    ELSE["IT WAS PHOTOELECTRIC EFFECT"
+        $AUSCALL($PHOTOAUSB);
+        CALL PHOTO;
+        "   THE FOLLOWING MACRO ALLOWS THE USER TO CHANGE THE PARTICLE"
+        "   SELECTION SCHEME (E.G., ADDING IMPORTANCE SAMPLING (SPLITTING, "
+        "   LEADING PARTICLE SELECTION, ETC.))."
+        "   (DEFAULT MACRO IS TEMPLATE '$PARTICLE-SELECTION-PHOTON' "
+        "   WHICH IN TURN HAS THE 'NULL' REPLACEMENT ';') "
+        $PARTICLE-SELECTION-PHOTO;
+        IF (NP = 0 | NP < NPOLD ) [
+            RETURN;
+        ]
+        "The above may happen if Russian Roulette is on"
+        "NP<NPOLD means that only electrons were created in the interaction"
+        "and that all of them were killed. Hence, the top particle on the "
+        "stack is from a previous interaction and may be in another region"
+        "To avoid problems with the :PNEWENERGY: loop logic, we simply force"
+        "a return to shower so that ELECTR or PHOTON are properly re-entered."
+        "Changed by IK Dec. 21 2006 after D. Rogers and R. Taylor found a"
+        "wrong dose with brems splitting and Russian Roulette on in a low "
+        "energy calculation."
+
+        $AUSCALL($PHOTOAUSA);
+        IF (IQ(NP) ~= 0 )
+            EXIT :PNEWENERGY:;
+    ] "END OF PHOTO ELECTRIC BLOCK"
+
+    :PAIR-ELECTRONS-KILLED:
+
+    "   IF HERE, THEN GAMMA IS LOWEST ENERGY PARTICLE."
+    PEIG=E(NP);
+    EIG=PEIG;
+    IF(EIG.LT.PCUT(IRL))
+        GO TO :PCUT-DISCARD:;
+]REPEAT ":PNEWENERGY: LOOP"
+
+"   IF HERE, MEANS ELECTRON TO BE TRANSPORTED NEXT"
+RETURN;
+
+"---------------------------------------------"
+"PHOTON CUTOFF ENERGY DISCARD SECTION         "
+"---------------------------------------------"
+:PCUT-DISCARD:
+IF( medium > 0 ) [
+    IF(EIG.GT.AP(MEDIUM)) [
+        IDR=$EGSCUTAUS;
+    ]
+    ELSE [
+        IDR=$PEGSCUTAUS;
+    ]
+]
+ELSE [
+    IDR=$EGSCUTAUS;
+]
+EDEP=PEIG;"GET ENERGY DEPOSITION FOR USER"
+$PHOTON-TRACK-END;
+IRCODE=2;
+NP=NP-1;
+RETURN;
+
+"---------------------------------------------"
+"User requested photon discard section        "
+"---------------------------------------------"
+:USER-PHOTON-DISCARD:
+EDEP=PEIG;
+$AUSCALL($USERDAUS);
+IRCODE=2;
+NP=NP-1;
+RETURN;
+
+"END OF SUBROUTINE PHOTON"  END;

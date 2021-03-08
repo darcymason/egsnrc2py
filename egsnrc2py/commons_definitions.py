@@ -676,6 +676,71 @@ class Edge(ComplexCommon):
 edge = Edge()
 
 
+class Photin(ComplexCommon):
+    """EGSnrc Photon ('Photin') common block"""
+    common_name = "photin"
+
+    all_vars = (
+        "ebinda(mxmed),"
+        "ge0(mxmed),ge1(mxmed),"
+        "gmfp0(mxge,mxmed),gbr10(mxge,mxmed),gbr20(mxge,mxmed),"
+        "gmfp1(mxge,mxmed),gbr11(mxge,mxmed),gbr21(mxge,mxmed),"
+        "rco0(mxmed),rco1(mxmed),"
+        "rsct0(mxrayff,mxmed),rsct1(mxrayff,mxmed),"
+        "cohe0(mxge,mxmed),cohe1(mxge,mxmed),"
+        # ali:photonuc, 1 line
+        "photonuc0(mxge,mxmed),photonuc1(mxge,mxmed),"
+        "dpmfp,"
+        "mpgem(mxsge,mxmed),"
+        "ngr(mxmed)"
+    )
+
+    all_types_and_comments = {
+        REAL: {
+            "ebinda":  "energy of the K-edge for a given medium",
+            "ge0":     "used for indexing in logarithmic interpolations",
+            "ge1": "",
+            "gmfp0":   "used for gamma MFP interpolation",
+            "gmfp1":   "",
+            "gbr10":   "used for branching into pair interpolation",
+            "gbr11":   "",
+            "gbr20":   "used for branching into Compton interpolation",
+            "gbr21":   "",
+            "rco0":    "used for indexing in momentum trans. sampling in Rayleigh",
+            "rco1":    "",
+            "rsct0":   "used for interpolation of momentum trans. func. in R",
+            "rsct1":   "",
+            "cohe0":   "used for Rayleigh modification interpolation",
+            "cohe1":   "",
+            "photonuc0": "used for photonuclear modification interpolation",
+            "photonuc1": "",
+            "dpmfp":     "number of MFP's to go to the next interaction",
+        },
+        INTEGER: {
+            "mpgem":  "??? ",
+            "ngr":    "array size for Rayleigh scattering data",
+        },
+    }
+photin = Photin()
+
+
+class X_options(ComplexCommon):
+    """Flags for EADL relaxation and Sabbatucci and Salvat PE xsections"""
+    common_name = "x_options"
+
+    all_vars = (
+        "eadl_relax,mcdf_pe_xsections"
+     )
+
+    all_types_and_comments = {
+        LOGICAL: {
+            "eadl_relax":       "Use EADL relaxation",
+            "mcdf_pe_xsections": "Use Sabbatucci and Salvat PE xsections",
+        },
+    }
+x_options = X_options()
+
+
 if __name__ == "__main__":
     # elec = ElecIn()
     # for info in elec.arr_names_types_comments():

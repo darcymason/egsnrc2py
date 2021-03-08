@@ -1602,14 +1602,16 @@ REPLACE {$OLD_RAYLEIGH-SCATTERING;} WITH {
   }
 REPLACE {$RAYLEIGH-SCATTERING;} WITH {
    ;IF(IRAYLR(IRL).EQ.1) [
-   $RANDOMSET RNNO37;
-   IF (RNNO37.LE.(1.0-COHFAC)) [
-   $AUSCALL($RAYLAUSB);
-   NPold = NP;
-   call egs_rayleigh_sampling(MEDIUM,E(NP),GLE,LGLE,COSTHE,SINTHE);
-   CALL UPHI(2,1);
-   $AUSCALL($RAYLAUSA);
-   GOTO :PNEWENERGY:;]]
+    $RANDOMSET RNNO37;
+    IF (RNNO37.LE.(1.0-COHFAC)) [
+      $AUSCALL($RAYLAUSB);
+      NPold = NP;
+      call egs_rayleigh_sampling(MEDIUM,E(NP),GLE,LGLE,COSTHE,SINTHE);
+      CALL UPHI(2,1);
+      $AUSCALL($RAYLAUSA);
+      GOTO :PNEWENERGY:;
+      ]
+   ]
 }
 
 "Ali:photonuc, 2 blocks"

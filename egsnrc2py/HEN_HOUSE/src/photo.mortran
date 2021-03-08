@@ -1,0 +1,162 @@
+"******************************************************************"
+SUBROUTINE PHOTO;
+"******************************************************************"
+" Programmers:  I. Kawrakow, complete recoding,                    "
+"                            Fluorescent X-rays, Auger,            "
+"                            Coster-Kronig treated in RELAX        "
+"               A.F. Bielajew (NRC) photoelectric angular distn    "
+"******************************************************************"
+
+$IMPLICIT-NONE;
+
+$COMIN-PHOTO; "default replacement is:
+              "COMIN/BOUNDS,DEBUG,EDGE,EGS-VARIANCE-REDUCTION,EPCONT,"
+                  "MEDIA,PHOTIN,RANDOM,STACK,UPHIOT,USEFUL/"
+
+$DEFINE-VARIABLES-FOR-SELECT-PHOTOELECTRON-DIRECTION;
+$DEFINE-LOCAL-VARIABLES-PHOTO;
+/* $REAL ftot,iprob; */
+data n_warning/0/;
+
+IF ( mcdf_pe_xsections ) [
+    call egs_shellwise_photo()
+    return;
+]
+
+NPold = NP;      "Set the old stack counter"
+PEIG=E(NP)
+irl = ir(np);
+IF( peig < edge_energies(2,1) ) [
+    IF( n_warning < 100 ) [
+        n_warning = n_warning + 1;
+        $egs_info(*,' Subroutine PHOTO called with E = ',peig,
+                   ' which is below the current min. energy of 1 keV! ');
+        $egs_info(*,' Converting now this photon to an electron, ');
+        $egs_info(*,' but you should check your code! ');
+    ]
+    iq(np) = -1;
+    e(np) = peig + prm;
+    return;
+]
+
+iZ = iedgfl(irl);
+do_relax = .false.;
+edep = pzero;
+IF( iedgfl(irl) ~= 0 ) [   " User requested atomic relaxations "
+                           " first sample the element "
+    IF( nne(medium) = 1 ) [
+        iZ = int( zelem(medium,1) + 0.5 );
+        DO j=1,edge_number(iZ) [
+            IF( peig >= edge_energies(j,iZ) ) EXIT;
+        ]
+    ]
+    ELSE [
+        aux = peig*peig; aux1 = aux*peig; aux = aux*Sqrt(peig);
+        sigtot = 0;
+        DO k=1,nne(medium) [
+            iZ = int( zelem(medium,k) + 0.5 );
+            IF( iZ < 1 | iZ > $MXELEMENT ) [
+                $egs_info(*,' Error in PHOTO: ');
+                $egs_fatal(*,'   Atomic number of element ',k,
+                   ' in medium ',medium,' is not between 1 and ',$MXELEMENT);
+            ]
+            IF( peig > edge_energies(1,iZ) ) [
+                j = 1;
+                sigma = (edge_a(1,iZ) + edge_b(1,iZ)/peig +
+                     edge_c(1,iZ)/aux + edge_d(1,iZ)/aux1)/peig;
+            ]
+            ELSE [
+                DO j=2,edge_number(iZ) [
+                    IF( peig >= edge_energies(j,iZ) ) [
+                        EXIT;
+                    ]
+                ]
+                sigma = edge_a(j,iZ) + gle*(edge_b(j,iZ) + gle*(edge_c(j,iZ) +
+                        gle*edge_d(j,iZ) ));
+                sigma = Exp(sigma);
+            ]
+            sigma = sigma * pz(medium,k);
+            sigtot = sigtot + sigma;
+            probs(k) = sigma;
+            ints(k) = j;
+        ]
+        $RANDOMSET br
+        br = br*sigtot;
+        DO k=1,nne(medium) [
+            br = br - probs(k);
+            IF( br <= 0 ) [
+                EXIT;
+            ]
+        ]
+        iZ = int( zelem(medium,k) + 0.5 );
+        j  = ints(k);
+    ]
+    " Now we know the atomic number (iZ) and the energy interval the "
+    " photon energy is in (j). It is time to sample the shell the photon "
+    " is interacting with. "
+    " left for now as before, to be changed!!! "
+    IF( peig <= binding_energies($MXSHELL,iZ) )
+    [   "Outer shells, no atomic relaxation"
+           "EADL relax: Below  M2-shell -> just emit e- "
+           iq(np) = -1;
+           e(np) = peig + prm;
+    ]
+    ELSE ["Above  N-shell -> sample the shell the photon is interacting with"
+        $RANDOMSET br; /* ftot = 1;  */
+        DO k=1,$MXINTER [
+            IF( peig > binding_energies(k,iZ) ) [
+                IF( br < interaction_prob(k,iZ) )[
+                    EXIT;
+                ]
+                br = (br - interaction_prob(k,iZ))/(1-interaction_prob(k,iZ));
+            ]
+        ]
+        "Interaction possible with any shell from k=1 to $MXSHELL"
+        "Defaults to $MXSHELL interaction if DO loop completes"
+        "****************"
+        "EADL APPROACH 1: Do not allow interaction below L3. Deviates"
+        "**************** from previous EGSnrc approach as it doesn't"
+        "                 generate e- nor x-rays from <M> and <N> shells."
+        IF (eadl_relax & k > 4)[
+           "No initial vacancy below L3 for now, just emit e-"
+           iq(np) = -1;
+           e(np) = peig + prm;
+        ]
+        ELSE["EADL:    Interacts with K,L1..L3 shells"
+             "default: Interacts with K,L1..L3,<M>, and <N> shells"
+           e_vac = binding_energies(k,iZ);
+           e(np) = peig - e_vac + prm
+           do_relax = .true.;
+           iq(np) = -1;
+        ]
+    ]
+]
+ELSE [
+    e(np) = peig + prm
+    iq(np) = -1;
+]
+
+IF( iq(np) = -1 ) [
+    $SELECT-PHOTOELECTRON-DIRECTION; "Samples photo-electron direction"
+]
+
+"****************"
+"EADL APPROACH 2: PE interactions with K, L1...L3,<M> and <N> shells,"
+"**************** but vacancies below L3 deposit energy locally. It wont"
+"                 produce x-rays from <M> and <N> shells."
+"IF ($EADL_RELAX & k > 4)[
+"   edep = e_vac; do_relax = .false.;
+"]
+IF( do_relax ) [
+    call relax(e_vac,k,iZ);
+]
+
+IF( EDEP > 0 ) [
+    $AUSCALL($PHOTXAUS);
+]    "generates IARG = 4 call"
+
+;
+$PLAY RUSSIAN ROULETTE WITH ELECTRONS FROM NPold; " TO NP;"
+
+return;
+end;
